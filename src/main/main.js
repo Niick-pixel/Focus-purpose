@@ -48,6 +48,9 @@ let isFullscreen = () => false;
 let stand;
 let standWins = [];
 let widgetWin = null;
+let miniWin = null;       // desk routine in the corner ("I'm standing · Keep working")
+let guideWin = null;      // pelvic floor guide
+let exerciseRoutine = null;
 let alternateTurn = 0; // 'alternate' activity: breathe, eyes, breathe, ...
 
 // ---------------------------------------------------------------------------
@@ -255,8 +258,8 @@ function standPayload(mode, primary) {
   const sessions = Object.values(stats.get()).reduce((n, d) => n + (d.stands || 0), 0);
   const level = sessions >= 25 ? 3 : sessions >= 10 ? 2 : 1; // same thresholds as StandExercises.levelFor
   return {
-    mode, primary, theme: s.theme, routine: s.standRoutine, voice: !!s.standVoice, level,
-    stoodMs: st.standingForMs || 0,
+    mode, primary, theme: s.theme, routine: exerciseRoutine || s.standRoutine, voice: !!s.standVoice, level,
+    guideSeen: !!s.standGuideSeen, stoodMs: st.standingForMs || 0,
   };
 }
 
@@ -349,6 +352,85 @@ function openWidget() {
 function closeWidget() {
   if (widgetWin && !widgetWin.isDestroyed()) widgetWin.destroy();
   widgetWin = null;
+}
+
+function openMini() {
+  if (miniWin && !miniWin.isDestroyed()) {
+    miniWin.webContents.send('stand:mode', standPayload('mini', true));
+    return;
+  }
+  const area = screen.getPrimaryDisplay().workArea;
+  const width = 380;
+  const height = 218;
+  miniWin = new BrowserWindow({
+    x: area.x + area.width - width - 12,
+    y: area.y + area.height - height - 12,
+    width,
+    height,
+    frame: false,
+    transparent: true,
+    backgroundColor: '#00000000',
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    skipTaskbar: true,
+    alwaysOnTop: true,
+    focusable: false, // never steals the keyboard from what you're working on
+    hasShadow: false,
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, '..', 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      backgroundThrottling: false,
+      autoplayPolicy: 'no-user-gesture-required',
+    },
+  });
+  miniWin.setAlwaysOnTop(true, 'floating');
+  miniWin.loadFile(path.join(RENDERER, 'mini.html'));
+  miniWin.webContents.once('did-finish-load', () => {
+    miniWin?.webContents.send('stand:mode', standPayload('mini', true));
+    miniWin?.showInactive();
+  });
+  miniWin.on('closed', () => { miniWin = null; });
+}
+
+function closeMini() {
+  if (!miniWin || miniWin.isDestroyed()) return;
+  const win = miniWin;
+  miniWin = null;
+  win.webContents.send('stand:closing');
+  setTimeout(() => { if (!win.isDestroyed()) win.destroy(); }, 600);
+}
+
+function openGuide() {
+  if (guideWin && !guideWin.isDestroyed()) {
+    guideWin.show();
+    guideWin.focus();
+    return;
+  }
+  const theme = THEMES[store.get().theme] || THEMES.night;
+  const area = screen.getPrimaryDisplay().workArea;
+  guideWin = new BrowserWindow({
+    width: Math.min(1100, area.width - 80),
+    height: Math.min(860, area.height - 60),
+    minWidth: 520,
+    minHeight: 480,
+    show: false,
+    title: 'Pelvic floor guide — Focus Point',
+    icon: path.join(ASSETS, 'icon.png'),
+    backgroundColor: theme.bg,
+    autoHideMenuBar: true,
+    webPreferences: {
+      preload: path.join(__dirname, '..', 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+  guideWin.removeMenu();
+  guideWin.loadFile(path.join(RENDERER, 'guide.html'));
+  guideWin.once('ready-to-show', () => guideWin?.show());
+  guideWin.on('closed', () => { guideWin = null; });
 }
 
 /** Why a stand reminder can't start right now (or null). */
@@ -505,7 +587,9 @@ function registerIpc() {
   ipcMain.handle('state:get', () => timer.state());
   ipcMain.handle('stand:state', () => stand.state());
   ipcMain.on('stand:now', () => stand.standNow());
-  ipcMain.on('stand:up', () => stand.up());
+  ipcMain.on('stand:up', (_e, mode) => stand.up(mode === 'mini' ? 'mini' : 'full'));
+  ipcMain.on('stand:mode', (_e, mode) => stand.setMode(mode === 'mini' ? 'mini' : 'full'));
+  ipcMain.on('guide:open', () => openGuide());
   ipcMain.on('stand:notNow', () => stand.notNow());
   ipcMain.on('stand:skip', () => stand.skip());
   ipcMain.on('stand:exercisesDone', () => stand.exercisesDone());
@@ -604,17 +688,31 @@ app.whenReady().then(() => {
     if (settingsWin && !settingsWin.isDestroyed()) settingsWin.webContents.send('preview:stop');
     openStandWindows('raise');
   });
-  stand.on('exercise', () => openStandWindows('exercise'));
+  stand.on('exercise', ({ routine, mode }) => {
+    exerciseRoutine = routine;
+    if (mode === 'mini') {
+      closeStandWindows();
+      openMini();
+    } else {
+      closeMini();
+      openStandWindows('exercise');
+    }
+  });
   stand.on('standing', () => {
+    exerciseRoutine = null;
     closeStandWindows();
+    closeMini();
     openWidget();
   });
   stand.on('lower', () => {
     closeWidget();
+    closeMini();
     openStandWindows('lower');
   });
   stand.on('closed', () => {
+    exerciseRoutine = null;
     closeStandWindows();
+    closeMini();
     closeWidget();
   });
   timer.on('warning', ({ secondsLeft }) => {

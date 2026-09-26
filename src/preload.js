@@ -32,7 +32,9 @@ contextBridge.exposeInMainWorld('api', {
   onStandMode: on('stand:mode'),
   onStandClosing: on('stand:closing'),
   standNow: () => ipcRenderer.send('stand:now'),
-  standUp: () => ipcRenderer.send('stand:up'),
+  standUp: (mode) => ipcRenderer.send('stand:up', mode),   // 'full' | 'mini'
+  standMode: (mode) => ipcRenderer.send('stand:mode', mode), // switch mid-routine
+  openGuide: () => ipcRenderer.send('guide:open'),
   standNotNow: () => ipcRenderer.send('stand:notNow'),
   standSkip: () => ipcRenderer.send('stand:skip'),
   standExercisesDone: () => ipcRenderer.send('stand:exercisesDone'),

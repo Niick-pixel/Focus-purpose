@@ -49,3 +49,24 @@ test('two-sided stretches switch sides halfway', () => {
 test('stretch routine ends with the pelvic floor release', () => {
   for (const ids of Object.values(X.ROUTINES)) assert.strictEqual(ids[ids.length - 1], 'release');
 });
+
+test('desk routine: about five minutes, hands-free moves, pelvic view for floor-only exercises', () => {
+  const secs = X.routineLength('desk', 1);
+  assert.ok(secs >= 240 && secs <= 360, `desk routine is ${secs}s`);
+  for (const id of X.ROUTINES.desk) {
+    const ex = X.getExercise(id, 1);
+    for (let t = 0; t < ex.secs; t += 0.5) {
+      assert.ok(!['overhead', 'behind', 'forward', 'desk'].includes(ex.at(t).pose.arms), `${id} keeps hands free to work`);
+      assert.ok(ex.at(t).pose.stance === 0 && ex.at(t).pose.hinge === 0, `${id} stays at the desk`);
+    }
+  }
+  for (const id of X.PELVIS_VIEW) assert.ok(X.EXERCISES[id], `${id} exists`);
+});
+
+test('stretches highlight the muscle they work', () => {
+  const spots = { reach: 'spine', hipflexor: 'hipFront', hamstring: 'backThigh', calf: 'calf', chest: 'chest', chin: 'neck' };
+  for (const [id, spot] of Object.entries(spots)) {
+    const ex = X.getExercise(id, 1);
+    assert.strictEqual(ex.at(ex.secs / 4).pose.focus, spot, id);
+  }
+});

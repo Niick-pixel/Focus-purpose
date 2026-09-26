@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="theme.css" />
   <link rel="stylesheet" href="break.css" />
   <link rel="stylesheet" href="stand.css" />
+  <link rel="stylesheet" href="guide.css" />
 </head>
 <body>
   <div class="backdrop">
@@ -24,6 +25,7 @@
     <p class="stand-sub" id="deskSub"></p>
     <div class="actions">
       <button class="btn primary" id="deskPrimary">I'm standing</button>
+      <button class="btn alt" id="deskAlt" hidden title="A small window in the corner guides a desk-friendly routine while you work">I’m standing · Keep working</button>
     </div>
     <div class="actions quiet" id="deskSecondary"></div>
   </main>
@@ -60,9 +62,15 @@
         <button class="btn" id="exSkip">Next exercise</button>
         <button class="btn" id="exEnd">Finish routine</button>
       </div>
+      <div class="actions quiet ex-extra">
+        <button class="btn" id="exGuide">How to use your pelvic floor</button>
+        <button class="btn" id="exMini">Continue in a mini window</button>
+      </div>
       <p class="ex-note">Gentle exercises for general wellness. Stop if anything hurts, and check with a pelvic-health physiotherapist if you have pain or symptoms.</p>
     </footer>
   </main>
+
+  <div class="guide-overlay" id="guide" hidden></div>
 
   <button class="voice" id="voice" title="Spoken cues" aria-label="Spoken cues" aria-pressed="false">
     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -81,6 +89,8 @@
 
   <script src="stand/visuals.js"></script>
   <script src="stand/exercises.js"></script>
+  <script src="stand/player.js"></script>
+  <script src="stand/guide.js"></script>
   <script src="stand.js"></script>
 </body>
 </html>

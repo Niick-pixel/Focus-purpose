@@ -4,7 +4,7 @@
 //   off       – standing reminders disabled
 //   sitting   – counting down to the next stand (may be held by a zone, a break, a fullscreen app…)
 //   raise     – "Raise your desk" prompt is up, waiting for "I'm standing"
-//   exercise  – guided pelvic-floor routine on screen
+//   exercise  – guided routine: fullscreen ('full') or a small desk routine in the corner ('mini')
 //   standing  – working standing up; a small widget counts down
 //   lower     – "Lower your desk" prompt, waiting for "Desk is down"
 //
@@ -34,6 +34,7 @@ class StandTimer extends EventEmitter {
     this.standStartedAt = 0;
     this.exerciseStartedAt = 0;
     this.held = null;        // why a due stand is waiting
+    this.mode = null;        // 'full' | 'mini' while exercising
     this.warned = false;
   }
 
@@ -81,19 +82,35 @@ class StandTimer extends EventEmitter {
     this.emitState();
   }
 
-  /** User: "I'm standing". */
-  up() {
+  /**
+   * User: "I'm standing".
+   * @param {'full' | 'mini'} mode  full: follow along fullscreen; mini: keep working with the desk routine
+   */
+  up(mode = 'full') {
     if (this.phase !== 'raise') return;
     this.standStartedAt = this.now();
     const routine = this.getSettings().standRoutine;
     if (routine && routine !== 'none') {
       this.phase = 'exercise';
-      this.exerciseStartedAt = this.now();
-      this.emit('exercise', { routine });
-      this.emitState();
+      this.#startExercise(mode);
     } else {
       this.#startStanding();
     }
+  }
+
+  /** Switch between the fullscreen routine and the mini window mid-routine. */
+  setMode(mode) {
+    if (this.phase !== 'exercise' || mode === this.mode) return;
+    this.#startExercise(mode);
+  }
+
+  #startExercise(mode) {
+    this.mode = mode === 'mini' ? 'mini' : 'full';
+    this.exerciseStartedAt = this.now();
+    // The mini window always runs the desk routine: small moves you can do while you work.
+    const routine = this.mode === 'mini' ? 'desk' : this.getSettings().standRoutine;
+    this.emit('exercise', { routine, mode: this.mode });
+    this.emitState();
   }
 
   /** Exercise screen finished (or the user skipped the rest of the routine). */
@@ -207,6 +224,7 @@ class StandTimer extends EventEmitter {
     return {
       phase: this.phase,
       held: this.held,
+      mode: this.phase === 'exercise' ? this.mode : null,
       dueInMs: this.phase === 'sitting' ? Math.max(0, this.dueAt - now) : null,
       standingLeftMs: this.phase === 'standing' ? Math.max(0, this.endsAt - now) : null,
       standingTotalMs: this.phase === 'standing' ? this.endsAt - this.standStartedAt : null,

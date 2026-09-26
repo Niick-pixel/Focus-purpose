@@ -221,6 +221,7 @@ function wireControls() {
 
   $('#breakNow').addEventListener('click', () => api.breakNow());
   $('#standNow').addEventListener('click', () => api.standNow());
+  $('#openGuide').addEventListener('click', () => api.openGuide());
   $('#pauseBtn').addEventListener('click', () => {
     if ($('#pauseBtn').dataset.mode === 'resume') api.resume();
     else api.pauseMenu();
