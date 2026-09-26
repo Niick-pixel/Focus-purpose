@@ -13,7 +13,9 @@ const DEFAULTS = {
   standEnabled: true,
   standEveryMinutes: 60,
   standMinutes: 15, // includes the exercise routine
-  standRoutine: 'short', // 'short' (~3 min) | 'full' (~6 min) | 'none'
+  standRoutine: 'short', // 'short' | 'full' (pelvic floor) | 'stretch' | 'mix' | 'none'
+  standVoice: false, // speak the exercise cues
+  standGuideSeen: false, // the pelvic floor guide shows once before the first guided routine
 
   zones: [], // break zones: [{ id, label, days: [0-6], start: 'HH:MM', end: 'HH:MM', enabled }]
 

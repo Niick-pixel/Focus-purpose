@@ -3,7 +3,8 @@ body.secondary .actions,
 body.secondary .ex-stage,
 body.secondary .ex-bottom,
 body.secondary .ex-how,
-body.secondary .mute { display: none !important; }
+body.secondary .mute,
+body.secondary .voice { display: none !important; }
 
 /* ---- Raise / lower -------------------------------------------------------- */
 .desk-view { gap: 14px; }
@@ -65,15 +66,22 @@ body.secondary .mute { display: none !important; }
 figure { margin: 0; }
 
 /* Figure */
-.fig-shadow { fill: color-mix(in srgb, var(--text) 8%, transparent); }
-.fig-near line, .fig-torso { stroke: color-mix(in srgb, var(--text) 88%, transparent); stroke-linecap: round; fill: none; }
-.fig-far line { stroke: color-mix(in srgb, var(--text) 32%, transparent); stroke-linecap: round; }
-.fig-near line, .fig-far line { stroke-width: 15; }
-.fig-near line:nth-child(4), .fig-near line:nth-child(5),
-.fig-far line:nth-child(4), .fig-far line:nth-child(5) { stroke-width: 11; }
-.fig-torso { stroke-width: 42; }
-.fig-head { fill: color-mix(in srgb, var(--text) 88%, transparent); }
-.fig-pelvis { fill: color-mix(in srgb, var(--text) 88%, transparent); }
+:root {
+  --fig-hi: color-mix(in srgb, var(--text) 96%, white);
+  --fig-lo: color-mix(in srgb, var(--text) 70%, var(--accent) 12%);
+  --fig-far-hi: color-mix(in srgb, var(--text) 38%, transparent);
+  --fig-far-lo: color-mix(in srgb, var(--text) 22%, transparent);
+}
+.fig-near path, .fig-torso, .fig-head, .fig-pelvis {
+  fill: url(#figBody);
+  stroke: color-mix(in srgb, var(--accent) 30%, transparent); /* faint rim light */
+  stroke-width: 0.8;
+}
+.fig-far path { fill: url(#figFar); }
+.fig-head { stroke-width: 1; }
+.fig-focus { fill: var(--accent); }
+.fig-focus-core { fill: color-mix(in srgb, var(--accent) 50%, white); }
+.fig-desk { stroke: color-mix(in srgb, var(--text) 40%, transparent); stroke-width: 6; stroke-linecap: round; }
 .fig-floor { fill: none; stroke: var(--accent); stroke-width: 5; stroke-linecap: round; filter: drop-shadow(0 0 6px var(--accent)); }
 
 /* Pelvis diagram */
@@ -116,4 +124,68 @@ figure { margin: 0; }
 @media (max-height: 760px) {
   .ex-how { display: none; }
   .ex-text { min-height: 130px; }
+}
+
+/* Focus caption + dimmed pelvis diagram during stretches */
+.ex-figure { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.ex-focus { font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); min-height: 1.2em; }
+.ex-stage { transition: gap .8s ease; }
+.ex-pelvis { width: clamp(240px, 26vw, 380px); overflow: hidden; transition: width .8s ease, opacity .6s ease; }
+.ex-pelvis svg { width: clamp(240px, 26vw, 380px); }
+.ex-stage.solo { gap: 0; }
+.ex-stage.solo .ex-pelvis { width: 0; opacity: 0; }
+
+/* Voice toggle sits next to the mute button */
+.voice {
+  position: fixed;
+  right: 80px;
+  bottom: 28px;
+  z-index: 2;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  transition: color .2s, background .2s;
+}
+.voice:hover { color: var(--text); background: var(--surface-2); }
+.voice[aria-pressed="true"] { color: var(--accent-ink); background: var(--accent); border-color: transparent; }
+body.paused .ex-cue { opacity: .5; }
+
+/* Pelvic floor, side view */
+.ps-bones path, .ps-bones line { fill: none; stroke: color-mix(in srgb, var(--text) 40%, transparent); stroke-width: 5; stroke-linecap: round; }
+.ps-bones .ps-vert { stroke-width: 3; stroke: color-mix(in srgb, var(--text) 28%, transparent); }
+.ps-bones .ps-pubis { fill: color-mix(in srgb, var(--text) 30%, transparent); stroke: color-mix(in srgb, var(--text) 45%, transparent); stroke-width: 2; }
+.ps-joint { fill: color-mix(in srgb, var(--text) 50%, transparent); }
+.ps-bladder, .ps-bowel { fill: color-mix(in srgb, var(--text) 9%, transparent); stroke: color-mix(in srgb, var(--text) 30%, transparent); stroke-width: 1.5; }
+.ps-glow { fill: var(--accent); }
+.ps-sling { stroke: color-mix(in srgb, var(--accent) 70%, white); stroke-width: 1; }
+.ps-fiber { fill: none; stroke: color-mix(in srgb, var(--accent) 45%, white); stroke-width: 0.8; opacity: .55; }
+.ps-arrows path { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.ps-label { fill: var(--muted); font-size: 11px; letter-spacing: .06em; }
+.ps-organ-label { opacity: .8; }
+.ps-title { fill: var(--accent); font-size: 12px; letter-spacing: .18em; text-transform: uppercase; }
+.ps-dir { fill: var(--muted); font-size: 10px; letter-spacing: .2em; text-transform: uppercase; opacity: .6; }
+
+/* Raise screen: second way in (mini window) */
+.actions .btn.alt { background: var(--surface-2); color: var(--text); padding: 11px 24px; }
+.actions .btn.alt:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+
+/* Secondary routine links: guide + mini window */
+.ex-extra { gap: 4px; }
+.ex-extra .btn { font-size: 12px; padding: 6px 12px; opacity: .8; }
+body.secondary .ex-extra { display: none !important; }
+
+/* Stage spotlight: a soft pool of light under the figure */
+.ex-figure { position: relative; isolation: isolate; }
+.ex-figure::before {
+  content: '';
+  position: absolute;
+  inset: -10% -45% -15%;
+  background: radial-gradient(ellipse 45% 30% at 50% 70%, color-mix(in srgb, var(--accent) 16%, transparent), transparent);
+  pointer-events: none;
+  z-index: -1;
 }

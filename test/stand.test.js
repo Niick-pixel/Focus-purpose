@@ -125,3 +125,30 @@ test('regular breaks wait while standing, then follow after a heads-up', () => {
   drive(31000);
   assert.deepStrictEqual(breaks, ['break']);
 });
+
+test('"Keep working" runs the desk routine in the mini window; modes can switch mid-routine', () => {
+  const { stand, events } = setup({ standRoutine: 'stretch' });
+  stand.standNow();
+  stand.up('mini');
+  assert.strictEqual(stand.phase, 'exercise');
+  assert.deepStrictEqual(events.at(-1), ['exercise', { routine: 'desk', mode: 'mini' }]);
+  assert.strictEqual(stand.state().mode, 'mini');
+
+  stand.setMode('mini'); // no-op: already there
+  assert.strictEqual(events.filter((e) => e[0] === 'exercise').length, 1);
+
+  stand.setMode('full');
+  assert.deepStrictEqual(events.at(-1), ['exercise', { routine: 'stretch', mode: 'full' }]);
+  stand.exercisesDone();
+  assert.strictEqual(stand.phase, 'standing');
+  assert.strictEqual(stand.state().mode, null);
+  stand.setMode('mini'); // ignored outside the routine
+  assert.strictEqual(stand.phase, 'standing');
+});
+
+test('"Guide me" (default) runs the chosen routine full screen', () => {
+  const { stand, events } = setup({ standRoutine: 'mix' });
+  stand.standNow();
+  stand.up();
+  assert.deepStrictEqual(events.at(-1), ['exercise', { routine: 'mix', mode: 'full' }]);
+});

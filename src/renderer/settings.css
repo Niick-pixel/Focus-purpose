@@ -510,7 +510,8 @@ textarea:focus { outline: none; border-color: var(--accent); }
 
 /* ---- Stand ---------------------------------------------------------------- */
 .segmented.three { grid-template-columns: repeat(3, 1fr); }
-#standNow { margin: 8px 0 4px; }
+.segmented.five { grid-template-columns: repeat(5, 1fr); }
+.stand-buttons { margin: 8px 0 4px; }
 .hint.disclaimer { opacity: .75; margin-top: 10px; }
 .stand-line {
   margin-top: -8px;
@@ -528,3 +529,5 @@ textarea:focus { outline: none; border-color: var(--accent); }
   opacity: .8;
 }
 .tab { padding: 7px 11px; }
+
+.stand-buttons { display: flex; gap: 8px; flex-wrap: wrap; }

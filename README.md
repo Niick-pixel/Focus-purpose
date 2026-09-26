@@ -13,7 +13,17 @@ A calm break reminder for Windows. Every so often (45 minutes by default) it gen
 - **Breathing guide.** An orb for 4 · 2 · 6 breathing (in, hold, out). A longer exhale helps you calm down.
 - **Real rain, plus live-generated ambience.** The rain is a real public-domain (CC0) field recording, softened to sound like rain heard from indoors and looped seamlessly. Ocean waves, wind, fireplace and a *Dreamscape* pad (slow chords, distant bells, long reverb) are synthesized live, so they never loop audibly. Mix them with sliders or pick a preset: Rainy night, Dreamscape, Seaside, Cabin, Storm.
 - **Eye exercises.** Follow a glowing dot side to side, up and down, in circles and figure-eights, shift your focus near and far, then close your eyes. Choose breathing, eye exercises, both on alternating breaks, or nothing.
-- **Standing desk mode.** On its own schedule (e.g. stand 15 min every hour), Focus Point asks you to raise your desk, guides you through a short standing routine focused on the pelvic floor, then gets out of the way with a small floating countdown. When time's up, it reminds you to lower the desk. The routine has an animated figure and a live pelvic-floor diagram that lifts and releases with each cue: find your pelvic floor, long holds, quick flicks, the elevator, mini squats, heel raises, pelvic tilts, hip circles, a standing march, and a full release. Choose a short (~3 min) or full (~6 min) routine, or no exercises. Regular breaks wait while you're standing; break zones and fullscreen apps hold standing reminders.
+- **Standing desk mode.** On its own schedule (e.g. stand 15 min every hour), Focus Point asks you to raise your desk, guides you through a short standing routine, then gets out of the way with a small floating countdown. When time's up, it reminds you to lower the desk. Regular breaks wait while you're standing; break zones and fullscreen apps hold standing reminders.
+  - **Routines:**
+    - **Pelvic floor** (~3 min, or ~6 min): find your pelvic floor, long holds, quick flicks, the elevator, mini squats, heel raises, pelvic tilts, hip circles, a standing march, and a full release.
+    - **Stretch** (~3½ min, for people who sit all day): overhead reach, hip flexors, hamstrings at the desk, calves, a chest opener and chin tucks.
+    - **Mix** of both.
+    - **None**: just the reminders.
+  - **Two ways to follow along:** *Guide me* runs the routine full screen. *Keep working* opens a small card in the bottom-right corner with a ~5-minute desk routine you can do while you work (posture reset, holds, heel raises, flicks, weight shifts, the elevator, soft knee bends, shoulder-blade squeezes, release). It never takes keyboard focus, and you can switch between the two at any time.
+  - **Visuals:** a shaded figure demonstrates every move and highlights the muscle each stretch works, next to a side-view pelvic-floor diagram (tailbone to pubic bone, with the bladder and bowel resting on it) that lifts and softens with each cue.
+  - **Pelvic floor guide:** what it is, how to find it, a good lift step by step, common mistakes, signs you're doing it right, why letting go matters, *the Knack*, and when to see a pelvic-health physio. It opens once before your first guided routine, and any time from the routine or Settings.
+  - **Progression:** holds and flicks get longer as your sessions add up (levels 1–3).
+  - **Controls:** optional **spoken cues**, **Pause** (Space) and **next exercise** (→).
 - **Your own music.** Add MP3/WAV/OGG/FLAC/M4A files. They're shuffled and mixed with the ambient layers.
 - **Customizable rhythm.** Choose how long you work and rest, add a longer break every N breaks, and get a heads-up notification before each break.
 - **Soft or strict.** Skip and Snooze buttons are optional. You can also turn on "Wait for me" so work doesn't restart until you click *I'm back*.
@@ -55,7 +65,8 @@ npm run dist       # build the Windows installer into dist/ (run on Windows)
 | Rest history (per-day totals in `stats.json`) | `src/main/stats.js`, `src/renderer/stats-view.js` |
 | Strict mode keyboard hook (`WH_KEYBOARD_LL`) | `src/main/keyblock.js` |
 | Standing desk rhythm (sit → raise → exercise → stand → lower) | `src/main/stand.js` |
-| Standing screens, figure rig, pelvic-floor diagram, routine | `src/renderer/stand.*`, `src/renderer/stand/`, `src/renderer/widget.*` |
+| Standing screens, figure rig (two-bone IK), pelvic-floor diagrams, routines, guide | `src/renderer/stand.*`, `src/renderer/stand/`, `src/renderer/guide.*` |
+| Mini desk-routine window and the floating standing widget | `src/renderer/mini.*`, `src/renderer/widget.*` |
 | Break zones (time ranges that hold breaks) | `src/main/zones.js`, `src/renderer/zones-view.js` |
 | Auto-updates (electron-updater + GitHub Releases) | `src/main/updater.js` |
 | Settings saved to `%APPDATA%/Focus Point/settings.json` | `src/main/store.js` |

@@ -154,15 +154,25 @@
         </div>
         <div class="field">
           <label>When you stand up</label>
-          <div class="segmented three" data-choice-key="standRoutine" role="radiogroup" aria-label="Exercises when you stand">
-            <button data-value="short" role="radio">Short · 3 min</button>
-            <button data-value="full" role="radio">Full · 6 min</button>
-            <button data-value="none" role="radio">No exercises</button>
+          <div class="segmented five" data-choice-key="standRoutine" role="radiogroup" aria-label="Exercises when you stand">
+            <button data-value="short" role="radio">Pelvic</button>
+            <button data-value="full" role="radio">Pelvic+</button>
+            <button data-value="stretch" role="radio">Stretch</button>
+            <button data-value="mix" role="radio">Mix</button>
+            <button data-value="none" role="radio">None</button>
           </div>
           <small class="hint" id="routineHint"></small>
         </div>
-        <button class="btn" id="standNow">Stand now</button>
+        <div class="row compact" data-show-if="standEnabled">
+          <div><label>Spoken cues</label><small>Hear the instructions — handy mid-squat</small></div>
+          <label class="switch"><input type="checkbox" data-key="standVoice" /><span></span></label>
+        </div>
+        <div class="stand-buttons">
+          <button class="btn" id="standNow">Stand now</button>
+          <button class="btn" id="openGuide">Pelvic floor guide</button>
+        </div>
       </div>
+      <small class="hint">When you stand, choose <b>Guide me</b> to follow the routine full screen, or <b>Keep working</b> for a 5-minute desk routine in a small window in the corner.</small>
       <small class="hint">Regular breaks wait while you're standing. Break zones and fullscreen apps hold standing reminders too.</small>
       <small class="hint disclaimer">Gentle exercises for general wellness, not medical advice. If you have pelvic pain, incontinence or recent surgery, check with a pelvic-health physiotherapist first.</small>
     </section>

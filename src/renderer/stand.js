@@ -1,49 +1,42 @@
 const $ = (id) => document.getElementById(id);
-const { Figure, PelvisDiagram, Desk } = window.StandVisuals;
-const { EXERCISES, ROUTINES, GET_READY } = window.StandExercises;
+const { Figure, PelvisSide, Desk } = window.StandVisuals;
+const { ROUTINE_NAMES } = window.StandExercises;
+const { RoutinePlayer, Cues, countLabel } = window.StandPlayer;
 
 let payload = null;
 let frame = 0;
 let desk = null;
-let routine = null; // { segments, t0, offset, figure, pelvis }
+let routine = null; // { player, figure, pelvis, seg, cue }
 let finished = false;
+let guide = null;   // mounted PelvicGuide overlay
 
-// ---- soft sound cues ----------------------------------------------------------
+// ---- sound & voice cues ----------------------------------------------------------
 
-let muted = false;
-try { muted = localStorage.getItem('standMuted') === '1'; } catch { /* storage unavailable */ }
-let audio = null;
-let lastChime = 0;
+const cues = new Cues();
+try { cues.muted = localStorage.getItem('standMuted') === '1'; } catch { /* storage unavailable */ }
+const chime = (...args) => cues.chime(...args);
 
-function chime(freq, gain = 0.06, length = 0.5) {
-  if (muted || !payload?.primary) return;
-  const now = performance.now();
-  if (now - lastChime < 1400) return; // never nag: at most one cue every 1.4 s
-  lastChime = now;
-  try {
-    audio ??= new AudioContext();
-    const t = audio.currentTime;
-    const o = audio.createOscillator();
-    const g = audio.createGain();
-    o.type = 'sine';
-    o.frequency.value = freq;
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(gain, t + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + length);
-    o.connect(g).connect(audio.destination);
-    o.start(t);
-    o.stop(t + length + 0.05);
-  } catch { /* audio unavailable */ }
+function renderVoice() {
+  $('voice').setAttribute('aria-pressed', String(cues.voiceOn));
+  $('voice').title = cues.voiceOn ? 'Spoken cues: on' : 'Spoken cues: off';
 }
 
+$('voice').addEventListener('click', () => {
+  cues.voiceOn = !cues.voiceOn;
+  cues.resetSpeech();
+  if (!cues.voiceOn) cues.silence();
+  window.api.setSettings({ standVoice: cues.voiceOn });
+  renderVoice();
+});
+
 function renderMute() {
-  $('mute').classList.toggle('muted', muted);
-  $('mute').title = muted ? 'Unmute cues' : 'Mute cues';
+  $('mute').classList.toggle('muted', cues.muted);
+  $('mute').title = cues.muted ? 'Unmute cues' : 'Mute cues';
 }
 
 $('mute').addEventListener('click', () => {
-  muted = !muted;
-  try { localStorage.setItem('standMuted', muted ? '1' : '0'); } catch { /* ignore */ }
+  cues.muted = !cues.muted;
+  try { localStorage.setItem('standMuted', cues.muted ? '1' : '0'); } catch { /* ignore */ }
   renderMute();
 });
 
@@ -69,11 +62,14 @@ function showDesk(direction) {
   if (direction === 'up') {
     $('deskEyebrow').textContent = 'Standing time';
     $('deskTitle').textContent = 'Time to stand';
-    $('deskSub').textContent = payload.routine === 'none'
-      ? 'Raise your desk and keep working on your feet.'
-      : 'Raise your desk. A short pelvic-floor routine starts when you’re up.';
-    $('deskPrimary').textContent = 'I’m standing';
-    $('deskPrimary').onclick = () => window.api.standUp();
+    const guided = payload.routine !== 'none';
+    $('deskSub').textContent = guided
+      ? 'Raise your desk. Then follow along full screen, or keep working with a small desk routine in the corner.'
+      : 'Raise your desk and keep working on your feet.';
+    $('deskPrimary').textContent = guided ? 'I’m standing · Guide me' : 'I’m standing';
+    $('deskPrimary').onclick = () => window.api.standUp('full');
+    $('deskAlt').hidden = !guided;
+    $('deskAlt').onclick = () => window.api.standUp('mini');
     secondary.append(
       button('Not now · 10 min', () => window.api.standNotNow()),
       button('Skip this one', () => window.api.standSkip()),
@@ -86,6 +82,7 @@ function showDesk(direction) {
     $('deskSub').textContent = `You stood for ${minutes} minute${minutes === 1 ? '' : 's'}. Lower your desk and let your shoulders drop.`;
     $('deskPrimary').textContent = 'Desk is down';
     $('deskPrimary').onclick = () => window.api.standDown();
+    $('deskAlt').hidden = true;
     secondary.append(button('5 more minutes', () => window.api.standMore()));
     chime(440, 0.05, 0.9);
   }
@@ -95,16 +92,6 @@ function showDesk(direction) {
 
 // ---- guided routine -------------------------------------------------------------
 
-function buildSegments(name) {
-  const ids = ROUTINES[name] || ROUTINES.short;
-  let t = 0;
-  return ids.map((id, index) => {
-    const seg = { id, index, start: t, readyEnd: t + GET_READY, end: t + GET_READY + EXERCISES[id].secs };
-    t = seg.end;
-    return seg;
-  });
-}
-
 function showExercises() {
   $('deskView').hidden = true;
   $('exerciseView').hidden = false;
@@ -113,31 +100,31 @@ function showExercises() {
   const pelSvg = $('pelvis');
   figSvg.replaceChildren();
   pelSvg.replaceChildren();
-  const segments = buildSegments(payload.routine);
-  routine = {
-    segments,
-    t0: performance.now(),
-    offset: 0,
-    figure: new Figure(figSvg),
-    pelvis: new PelvisDiagram(pelSvg),
-    seg: -1,
-    cue: '',
-    lastFloor: 0,
-  };
-  $('exDots').replaceChildren(...segments.map(() => document.createElement('i')));
+  const level = payload.level || 1;
+  const player = new RoutinePlayer(payload.routine, level);
+  $('exEyebrow').textContent = `Standing · ${ROUTINE_NAMES[payload.routine] || 'Pelvic floor'}${payload.routine === 'stretch' ? '' : ` · Level ${level}`}`;
+  routine = { player, figure: new Figure(figSvg), pelvis: new PelvisSide(pelSvg), seg: -1, cue: '' };
+  $('exDots').replaceChildren(...player.segments.map(() => document.createElement('i')));
+  setPaused(false);
+  // First guided pelvic-floor session: show how it's done before starting.
+  if (!payload.guideSeen && payload.primary && payload.routine !== 'stretch') openGuide(true);
   loop();
 }
 
-function elapsed() {
-  return (performance.now() - routine.t0) / 1000 + routine.offset;
+function setPaused(paused) {
+  $('exPause').textContent = paused ? 'Resume' : 'Pause';
+  document.body.classList.toggle('paused', paused);
+  if (paused) cues.silence();
+}
+
+function togglePause() {
+  if (!routine || $('exerciseView').hidden || guide) return;
+  setPaused(routine.player.togglePause());
 }
 
 function skipToNext() {
-  if (!routine) return;
-  const t = elapsed();
-  const next = routine.segments.find((s) => s.start > t);
-  if (next) routine.offset += next.start - t;
-  else finish();
+  if (!routine || guide) return;
+  if (!routine.player.skip()) finish();
 }
 
 function finish() {
@@ -158,52 +145,76 @@ function setCue(text) {
 }
 
 function routineFrame() {
-  const t = elapsed();
-  const segs = routine.segments;
-  const segIndex = segs.findIndex((s) => t < s.end);
-  if (segIndex === -1) {
+  const f = routine.player.frame();
+  if (!f) {
     routine.figure.ease({ arms: 'hang' });
     routine.pelvis.set(0);
     if (payload.primary) finish();
     return;
   }
-  const seg = segs[segIndex];
-  const ex = EXERCISES[seg.id];
+  const { seg, index, ready, state } = f;
+  const ex = seg.ex;
+  const segs = routine.player.segments;
 
-  if (segIndex !== routine.seg) {
-    routine.seg = segIndex;
+  if (index !== routine.seg) {
+    routine.seg = index;
     $('exTitle').textContent = ex.title;
     $('exHow').textContent = ex.how;
+    $('exFocus').textContent = `Focus · ${ex.focus}`;
+    // Stretches get the stage to themselves; the pelvis diagram returns for pelvic-floor work.
+    $('exPelvis').closest('.ex-stage').classList.toggle('solo', ex.focus !== 'Pelvic floor');
+    cues.resetSpeech();
+    cues.speak(`${index === 0 ? '' : 'Next: '}${ex.title}`);
     [...$('exDots').children].forEach((d, i) => {
-      d.classList.toggle('done', i < segIndex);
-      d.classList.toggle('now', i === segIndex);
+      d.classList.toggle('done', i < index);
+      d.classList.toggle('now', i === index);
     });
   }
 
-  let state;
-  if (t < seg.readyEnd) {
-    $('exNext').textContent = segIndex === 0 ? 'Get ready' : 'Up next';
-    state = { floor: 0, pose: { arms: ex.at(0).pose.arms }, cue: 'Stand tall and breathe', count: '' };
-    $('exBar').style.width = `${((t - seg.start) / GET_READY) * 100}%`;
-  } else {
-    $('exNext').textContent = `${segIndex + 1} of ${segs.length}`;
-    state = ex.at(t - seg.readyEnd);
-    $('exBar').style.width = `${((t - seg.readyEnd) / ex.secs) * 100}%`;
-  }
+  $('exNext').textContent = ready ? (index === 0 ? 'Get ready' : 'Up next') : `${index + 1} of ${segs.length}`;
+  $('exBar').style.width = `${f.progress * 100}%`;
 
+  if (routine.player.paused) {
+    setCue('Paused');
+    return;
+  }
   routine.figure.ease({ ...state.pose, floor: state.floor });
   routine.pelvis.set(state.floor);
   setCue(state.cue);
-  $('exCount').textContent = state.count ? `Rep ${state.count}` : '';
+  if (!ready) cues.speak(state.cue);
+  $('exCount').textContent = countLabel(state.count);
+  cues.floor(state.floor);
+}
 
-  // Soft cue as the lift begins (higher note) or fully lets go (lower note).
-  if (routine.lastFloor < 0.45 && state.floor >= 0.45) chime(660, 0.035, 0.35);
-  if (routine.lastFloor > 0.25 && state.floor <= 0.05) chime(494, 0.03, 0.45);
-  routine.lastFloor = state.floor;
+// ---- pelvic floor guide overlay ----------------------------------------------------
+
+function openGuide(first = false) {
+  if (guide || !routine) return;
+  const wasPaused = routine.player.paused;
+  routine.player.pause();
+  setPaused(true);
+  const host = $('guide');
+  host.hidden = false;
+  guide = window.PelvicGuide.mount(host, {
+    closeLabel: first ? 'Start the routine' : 'Back to the routine',
+    onClose: () => {
+      guide.destroy();
+      guide = null;
+      host.hidden = true;
+      if (first || !payload.guideSeen) window.api.setSettings({ standGuideSeen: true });
+      payload.guideSeen = true;
+      if (!wasPaused) setPaused(routine.player.togglePause());
+      $('exPause').focus();
+    },
+  });
+  host.scrollTop = 0;
 }
 
 $('exSkip').addEventListener('click', skipToNext);
+$('exPause').addEventListener('click', togglePause);
 $('exEnd').addEventListener('click', finish);
+$('exGuide').addEventListener('click', () => openGuide());
+$('exMini').addEventListener('click', () => window.api.standMode('mini'));
 
 // ---- frame loop ---------------------------------------------------------------
 
@@ -223,7 +234,10 @@ window.api.onStandMode((p) => {
   payload = { ...payload, ...p };
   document.documentElement.dataset.theme = payload.theme || 'night';
   document.body.classList.toggle('secondary', !payload.primary);
+  cues.voiceOn = !!payload.voice;
+  cues.active = !!payload.primary;
   renderMute();
+  renderVoice();
   if (p.mode === 'raise') showDesk('up');
   else if (p.mode === 'lower') showDesk('down');
   else if (p.mode === 'exercise') {
@@ -235,9 +249,17 @@ window.api.onStandMode((p) => {
 
 window.api.onStandClosing(() => {
   document.body.classList.add('leaving');
+  cues.silence();
   setTimeout(() => cancelAnimationFrame(frame), 1500);
 });
 
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' || (e.ctrlKey && ['r', 'w'].includes(e.key.toLowerCase())) || e.key === 'F5') e.preventDefault();
+  if (guide) {
+    if (e.key === 'Escape') $('guide').querySelector('.guide-close')?.click();
+    return;
+  }
+  if (!routine || $('exerciseView').hidden || e.target.closest?.('button')) return;
+  if (e.key === ' ') { e.preventDefault(); togglePause(); }
+  if (e.key === 'ArrowRight') skipToNext();
 });

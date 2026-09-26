@@ -1,7 +1,7 @@
 {
   "name": "focus-point",
   "productName": "Focus Point",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "A calm break reminder: every so often it covers your screen and makes you rest, with rain and dreamy ambient sounds.",
   "main": "src/main/main.js",
   "author": "Nicolas",

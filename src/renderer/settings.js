@@ -94,8 +94,10 @@ function render() {
   };
   $('#activityHint').textContent = hints[settings.breakActivity] || '';
   $('#routineHint').textContent = {
-    short: 'Find your pelvic floor, long holds, quick flicks, mini squats and a full release.',
-    full: 'Adds the elevator, heel raises, pelvic tilts, hip circles and a standing march.',
+    short: 'Pelvic floor, ~3 min: find it, long holds, quick flicks, mini squats and a full release. Holds get longer as you progress.',
+    full: 'Pelvic floor, ~6 min: adds the elevator, heel raises, pelvic tilts, hip circles and a standing march.',
+    stretch: 'Stretches for sitters, ~3½ min: overhead reach, hip flexors, hamstrings, calves, chest opener and chin tucks.',
+    mix: 'Best of both, ~4 min: pelvic floor holds and squats with hip-flexor and chest stretches.',
     none: 'Just the reminders to raise and lower your desk.',
   }[settings.standRoutine] || '';
   for (const el of $$('[data-disabled-if]')) el.classList.toggle('disabled', !!settings[el.dataset.disabledIf]);
@@ -219,6 +221,7 @@ function wireControls() {
 
   $('#breakNow').addEventListener('click', () => api.breakNow());
   $('#standNow').addEventListener('click', () => api.standNow());
+  $('#openGuide').addEventListener('click', () => api.openGuide());
   $('#pauseBtn').addEventListener('click', () => {
     if ($('#pauseBtn').dataset.mode === 'resume') api.resume();
     else api.pauseMenu();
