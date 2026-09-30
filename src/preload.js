@@ -28,6 +28,7 @@ contextBridge.exposeInMainWorld('api', {
 
   // standing desk
   getStandState: () => ipcRenderer.invoke('stand:state'),
+  coordSummary: () => ipcRenderer.invoke('coord:summary'),
   onStandState: on('stand:state'),
   onStandMode: on('stand:mode'),
   onStandClosing: on('stand:closing'),

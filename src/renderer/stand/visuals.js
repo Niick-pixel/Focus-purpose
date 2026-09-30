@@ -434,21 +434,34 @@
   // Standing desk: the desktop glides up or down in a loop, with a soft chevron cue.
   // ---------------------------------------------------------------------------
   class Desk {
+    // Front view, as you see it from your chair: two telescoping legs, the desktop,
+    // a monitor facing you and a keyboard. The top glides up or down in a loop.
     constructor(svg, direction = 'up') {
       this.svg = svg;
       this.direction = direction;
       svg.setAttribute('viewBox', '0 0 320 300');
-      el('line', { x1: 30, y1: 270, x2: 290, y2: 270, class: 'desk-floor' }, svg);
-      el('rect', { x: 78, y: 262, width: 164, height: 8, rx: 4, class: 'desk-base' }, svg);
-      this.outer = el('rect', { x: 150, width: 20, rx: 4, class: 'desk-column' }, svg);
-      this.inner = el('rect', { x: 153, width: 14, rx: 3, class: 'desk-column-inner' }, svg);
-      this.top = el('g', {}, svg);
-      el('rect', { x: 40, y: -12, width: 240, height: 12, rx: 6, class: 'desk-top' }, this.top);
-      el('rect', { x: 126, y: -86, width: 92, height: 60, rx: 7, class: 'desk-monitor' }, this.top);
-      el('rect', { x: 166, y: -26, width: 12, height: 14, rx: 2, class: 'desk-stand' }, this.top);
-      el('rect', { x: 70, y: -18, width: 44, height: 6, rx: 3, class: 'desk-keyboard' }, this.top);
+      el('line', { x1: 20, y1: 270, x2: 300, y2: 270, class: 'desk-floor' }, svg);
+      // Feet and the fixed lower half of each leg.
+      for (const x of [74, 246]) {
+        el('rect', { x: x - 30, y: 262, width: 60, height: 8, rx: 4, class: 'desk-base' }, svg);
+        el('rect', { x: x - 8, y: 196, width: 16, height: 68, rx: 3, class: 'desk-column' }, svg);
+      }
+      // Upper half of each leg slides out of the lower half.
+      this.inners = [74, 246].map((x) => el('rect', { x: x - 5, width: 10, rx: 2, class: 'desk-column-inner' }, svg));
       this.chev = el('g', { class: 'desk-chevrons' }, svg);
-      for (let i = 0; i < 3; i++) el('path', { d: `M-10 ${i * 12} L0 ${i * 12 - 10} L10 ${i * 12}` }, this.chev);
+      for (let i = 0; i < 3; i++) el('path', { d: `M-12 ${i * 13} L0 ${i * 13 - 11} L12 ${i * 13}` }, this.chev);
+
+      this.top = el('g', {}, svg);
+      el('rect', { x: 66, y: 12, width: 188, height: 6, rx: 2, class: 'desk-column' }, this.top);        // frame under the top
+      el('rect', { x: 36, y: -7, width: 248, height: 8, rx: 3, class: 'desk-surface' }, this.top);        // top surface, seen slightly from above
+      el('rect', { x: 28, y: 0, width: 264, height: 13, rx: 5, class: 'desk-top' }, this.top);            // front edge
+      el('rect', { x: 146, y: -9, width: 28, height: 4, rx: 2, class: 'desk-stand' }, this.top);          // monitor foot
+      el('rect', { x: 156, y: -22, width: 8, height: 14, rx: 2, class: 'desk-stand' }, this.top);         // monitor neck
+      el('rect', { x: 102, y: -92, width: 116, height: 72, rx: 7, class: 'desk-monitor' }, this.top);     // bezel
+      el('rect', { x: 109, y: -85, width: 102, height: 58, rx: 3, class: 'desk-screen' }, this.top);      // screen
+      el('path', { d: 'M116 -80 L146 -80 L124 -40 L116 -40 Z', class: 'desk-glare' }, this.top);
+      el('rect', { x: 118, y: -5, width: 84, height: 5, rx: 2, class: 'desk-keyboard' }, this.top);
+      el('rect', { x: 216, y: -5, width: 10, height: 5, rx: 2.5, class: 'desk-keyboard' }, this.top);     // mouse
       this.t0 = performance.now();
     }
 
@@ -458,14 +471,16 @@
       const move = Math.min(1, t / 2.2);
       const e = move < 0.5 ? 4 * move ** 3 : 1 - (-2 * move + 2) ** 3 / 2; // ease in-out
       const k = this.direction === 'up' ? e : 1 - e;
-      const y = lerp(170, 88, k);           // desktop height
+      const y = lerp(172, 96, k);           // desktop height
       const fade = t > cycle - 0.5 ? (cycle - t) / 0.5 : Math.min(1, t / 0.3);
       this.top.setAttribute('transform', `translate(0 ${y.toFixed(1)})`);
-      this.outer.setAttribute('y', '170');
-      this.outer.setAttribute('height', '92');
-      this.inner.setAttribute('y', y.toFixed(1));
-      this.inner.setAttribute('height', (182 - y).toFixed(1));
-      this.chev.setAttribute('transform', `translate(262 ${this.direction === 'up' ? 150 - k * 30 : 110 + (1 - k) * 30}) ${this.direction === 'up' ? '' : 'scale(1 -1)'}`);
+      for (const inner of this.inners) {
+        inner.setAttribute('y', (y + 13).toFixed(1));
+        inner.setAttribute('height', (204 - y - 13).toFixed(1));
+      }
+      // Chevrons sit between the legs, under the desk, pointing the way it moves.
+      const cy = this.direction === 'up' ? 236 - k * 22 : 206 + (1 - k) * 22;
+      this.chev.setAttribute('transform', `translate(160 ${cy.toFixed(1)}) ${this.direction === 'up' ? '' : 'scale(1 -1)'}`);
       this.chev.style.opacity = String(0.9 * fade);
       this.svg.style.opacity = String(0.35 + 0.65 * fade);
     }

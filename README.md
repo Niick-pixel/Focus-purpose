@@ -24,6 +24,7 @@ A calm break reminder for Windows. Every so often (45 minutes by default) it gen
   - **Pelvic floor guide:** what it is, how to find it, a good lift step by step, common mistakes, signs you're doing it right, why letting go matters, *the Knack*, and when to see a pelvic-health physio. It opens once before your first guided routine, and any time from the routine or Settings.
   - **Progression:** holds and flicks get longer as your sessions add up (levels 1–3).
   - **Controls:** optional **spoken cues**, **Pause** (Space) and **next exercise** (→).
+- **Smart order.** A break and a stand never land on top of each other. When both are due close together, only one goes: standing first (the break waits, and a finished stand counts as your break) or the break first (the stand waits until there's some space). It learns from what you do — which one you take or dismiss, separately for mornings, afternoons and evenings — and widens the space between them when you keep dismissing things that come right after each other. You can see what it has learned, or turn it off, in *Settings → Stand*.
 - **Your own music.** Add MP3/WAV/OGG/FLAC/M4A files. They're shuffled and mixed with the ambient layers.
 - **Customizable rhythm.** Choose how long you work and rest, add a longer break every N breaks, and get a heads-up notification before each break.
 - **Soft or strict.** Skip and Snooze buttons are optional. You can also turn on "Wait for me" so work doesn't restart until you click *I'm back*.
@@ -65,6 +66,7 @@ npm run dist       # build the Windows installer into dist/ (run on Windows)
 | Rest history (per-day totals in `stats.json`) | `src/main/stats.js`, `src/renderer/stats-view.js` |
 | Strict mode keyboard hook (`WH_KEYBOARD_LL`) | `src/main/keyblock.js` |
 | Standing desk rhythm (sit → raise → exercise → stand → lower) | `src/main/stand.js` |
+| Smart order between breaks and stands (learns your preferences) | `src/main/coordinator.js` |
 | Standing screens, figure rig (two-bone IK), pelvic-floor diagrams, routines, guide | `src/renderer/stand.*`, `src/renderer/stand/`, `src/renderer/guide.*` |
 | Mini desk-routine window and the floating standing widget | `src/renderer/mini.*`, `src/renderer/widget.*` |
 | Break zones (time ranges that hold breaks) | `src/main/zones.js`, `src/renderer/zones-view.js` |

@@ -222,6 +222,7 @@ function wireControls() {
   $('#breakNow').addEventListener('click', () => api.breakNow());
   $('#standNow').addEventListener('click', () => api.standNow());
   $('#openGuide').addEventListener('click', () => api.openGuide());
+  renderSmartHint();
   $('#pauseBtn').addEventListener('click', () => {
     if ($('#pauseBtn').dataset.mode === 'resume') api.resume();
     else api.pauseMenu();
@@ -374,6 +375,7 @@ function renderStand(st) {
   });
   renderStand(await api.getStandState());
   api.onStandState(renderStand);
+  api.onStats(renderSmartHint); // outcomes teach smart order
   renderUpdate(await api.updateState());
   api.onUpdate(renderUpdate);
   $('#checkUpdates').addEventListener('click', () => api.checkForUpdates());
@@ -385,3 +387,17 @@ function renderStand(st) {
   }
   $('#version').textContent = `v${info.version}${info.fast ? ' · fast mode' : ''}`;
 })();
+
+// What smart order has learned so far (Stand tab).
+async function renderSmartHint() {
+  const el = document.querySelector('#smartHint');
+  if (!el || !window.api.coordSummary) return;
+  const c = await window.api.coordSummary();
+  const first = (k) => (k === 'stand' ? 'standing' : 'the break');
+  const parts = Object.entries(c.byPart);
+  const same = parts.every(([, k]) => k === parts[0][1]);
+  const order = same
+    ? `When both are due, ${first(parts[0][1])} goes first`
+    : `When both are due: ${parts.map(([p, k]) => `${p} → ${first(k)}`).join(', ')}`;
+  el.textContent = `${order}, and they stay at least ${c.gapMin} min apart. A finished stand counts as your break.${c.learning ? ' Still learning from what you do.' : ''}`;
+}
