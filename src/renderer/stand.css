@@ -11,10 +11,13 @@ body.secondary .voice { display: none !important; }
 .desk-art { width: min(340px, 60vw); height: auto; margin-bottom: 8px; }
 .desk-floor { stroke: var(--line); stroke-width: 2; }
 .desk-base { fill: var(--surface-2); }
-.desk-column { fill: var(--surface-2); }
+.desk-column { fill: color-mix(in srgb, var(--text) 18%, transparent); }
 .desk-column-inner { fill: color-mix(in srgb, var(--text) 30%, transparent); }
 .desk-top { fill: color-mix(in srgb, var(--text) 85%, transparent); }
-.desk-monitor { fill: none; stroke: color-mix(in srgb, var(--text) 70%, transparent); stroke-width: 3; }
+.desk-monitor { fill: color-mix(in srgb, var(--text) 70%, transparent); }
+.desk-screen { fill: color-mix(in srgb, var(--bg) 70%, var(--accent) 18%); }
+.desk-glare { fill: color-mix(in srgb, var(--text) 10%, transparent); }
+.desk-surface { fill: color-mix(in srgb, var(--text) 55%, transparent); }
 .desk-stand, .desk-keyboard { fill: color-mix(in srgb, var(--text) 45%, transparent); }
 .desk-chevrons path { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 

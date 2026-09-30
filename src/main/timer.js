@@ -25,6 +25,7 @@ class RestTimer extends EventEmitter {
     this.idleSeconds = opts.idleSeconds ?? (() => 0);
     this.isFullscreen = opts.isFullscreen ?? (() => false);
     this.isStanding = opts.isStanding ?? (() => false);
+    this.yieldReason = opts.yieldReason ?? (() => null); // smart order (coordinator.js)
     this.deferredSince = 0;
     this.deferReason = null; // 'fullscreen' | 'zone'
 
@@ -132,6 +133,14 @@ class RestTimer extends EventEmitter {
     this.startWork();
   }
 
+  /** A standing session counted as your break: start a fresh work block. */
+  creditRest() {
+    if (this.phase === 'working' || this.phase === 'deferred') {
+      this.deferReason = null;
+      this.startWork();
+    }
+  }
+
   /** Restart the current work block (e.g. after changing the interval). */
   restartWork() {
     if (this.phase === 'working') this.startWork();
@@ -211,6 +220,8 @@ class RestTimer extends EventEmitter {
   /** Why a due break should wait right now, or null. Zones win over fullscreen for display. */
   holdReason(s, now) {
     if (this.isStanding()) return 'standing'; // standing sessions take priority over breaks
+    const y = this.yieldReason(this.phase === 'working' ? this.endsAt - now : 0);
+    if (y) return y;                         // 'stand-first' | 'spacing'
     if (activeZone(s.zones, now)) return 'zone';
     if (s.holdForFullscreen && this.isFullscreen()) return 'fullscreen';
     return null;

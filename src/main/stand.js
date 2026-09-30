@@ -154,6 +154,7 @@ class StandTimer extends EventEmitter {
   down() {
     if (this.phase !== 'lower') return;
     this.emit('stood', { ms: this.now() - this.standStartedAt });
+    this.emit('outcome', { outcome: 'done' });
     this.emit('closed');
     this.sit();
   }
@@ -161,6 +162,7 @@ class StandTimer extends EventEmitter {
   /** User: "Not now" on the raise prompt. */
   notNow() {
     if (this.phase !== 'raise') return;
+    this.emit('outcome', { outcome: 'snoozed' });
     this.emit('closed');
     this.sit(SNOOZE_MINUTES * this.unitMs);
   }
@@ -168,8 +170,15 @@ class StandTimer extends EventEmitter {
   /** User: "Skip this one" on the raise prompt. */
   skip() {
     if (this.phase !== 'raise') return;
+    this.emit('outcome', { outcome: 'skipped' });
     this.emit('closed');
     this.sit();
+  }
+
+  /** Smart order chose to stand instead of a break that's (nearly) due: take its slot. */
+  pullForward(ms = 0) {
+    const at = this.now() + ms;
+    if (this.phase === 'sitting' && this.dueAt > at) this.dueAt = at;
   }
 
   /** Back from being away / paused: you weren't sitting, so start a fresh countdown. */

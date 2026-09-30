@@ -15,7 +15,9 @@ const DEFAULTS = {
   standMinutes: 15, // includes the exercise routine
   standRoutine: 'short', // 'short' | 'full' (pelvic floor) | 'stretch' | 'mix' | 'none'
   standVoice: false, // speak the exercise cues
-  standGuideSeen: false, // the pelvic floor guide shows once before the first guided routine
+  standGuideSeen: false,
+  smartOrder: true, // breaks and stands never overlap; learns which you prefer (coordinator.js)
+  coordination: null, // what smart order has learned // the pelvic floor guide shows once before the first guided routine
 
   zones: [], // break zones: [{ id, label, days: [0-6], start: 'HH:MM', end: 'HH:MM', enabled }]
 

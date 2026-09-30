@@ -11,6 +11,7 @@ const { Stats } = require('./stats');
 const { createKeyBlocker } = require('./keyblock');
 const { createUpdater } = require('./updater');
 const { StandTimer } = require('./stand');
+const { Coordinator } = require('./coordinator');
 const { activeZone } = require('./zones');
 
 const FAST = process.argv.includes('--fast'); // dev: "minutes" become seconds
@@ -46,6 +47,7 @@ let keyBlocker;
 let updater;
 let isFullscreen = () => false;
 let stand;
+let coord;
 let standWins = [];
 let widgetWin = null;
 let miniWin = null;       // desk routine in the corner ("I'm standing · Keep working")
@@ -441,13 +443,14 @@ function standHoldReason() {
   if (phase === 'paused' || phase === 'away') return phase;
   if (activeZone(s.zones, Date.now())) return 'zone';
   if (s.holdForFullscreen && isFullscreen()) return 'fullscreen';
-  return null;
+  return coord?.standHold(timer.state()) ?? null; // smart order: 'spacing' | 'break-soon'
 }
 
 function standLabel(st) {
   switch (st.phase) {
     case 'sitting':
       if (st.held === 'zone') return 'Stand — waiting for your break zone to end';
+      if (st.held === 'break-soon' || st.held === 'spacing') return 'Stand — after your break';
       if (st.held) return 'Stand — waiting';
       return `Stand in ${fmt(st.dueInMs)}`;
     case 'raise': return 'Time to stand';
@@ -470,6 +473,8 @@ function trayLabel(state) {
     case 'away': return 'Away — timer restarts when you return';
     case 'deferred':
       if (state.deferReason === 'standing') return 'Break waiting — you’re standing';
+      if (state.deferReason === 'stand-first') return 'Break waiting — standing first';
+      if (state.deferReason === 'spacing') return 'Break in a moment';
       return state.deferReason === 'zone' && state.zone
         ? `${state.zone.label} — breaks resume at ${clock(state.zone.endsAt)}`
         : 'Break waiting — fullscreen app open';
@@ -586,6 +591,7 @@ function registerIpc() {
 
   ipcMain.handle('state:get', () => timer.state());
   ipcMain.handle('stand:state', () => stand.state());
+  ipcMain.handle('coord:summary', () => coord.summary());
   ipcMain.on('stand:now', () => stand.standNow());
   ipcMain.on('stand:up', (_e, mode) => stand.up(mode === 'mini' ? 'mini' : 'full'));
   ipcMain.on('stand:mode', (_e, mode) => stand.setMode(mode === 'mini' ? 'mini' : 'full'));
@@ -655,12 +661,21 @@ app.whenReady().then(() => {
     idleSeconds: () => powerMonitor.getSystemIdleTime(),
     isFullscreen,
     isStanding: () => stand?.isActive() ?? false,
+    yieldReason: (breakInMs) => coord?.breakHold(stand.state(), breakInMs, Math.max(30, store.get().warningSeconds) * 1000) ?? null,
   });
 
   stand = new StandTimer(() => store.get(), {
     unitMs: FAST ? 1000 : 60000,
     holdReason: standHoldReason,
   });
+
+  coord = new Coordinator({
+    unitMs: FAST ? 1000 : 60000,
+    enabled: () => store.get().smartOrder !== false && store.get().standEnabled,
+    load: () => store.get().coordination || null,
+    save: (data) => store.set({ coordination: data }),
+  });
+  coord.attach(timer, stand);
 
   let lastPhase = timer.state().phase;
   timer.on('state', (state) => {
