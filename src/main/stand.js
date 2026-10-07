@@ -4,7 +4,9 @@
 //   off       – standing reminders disabled
 //   sitting   – counting down to the next stand (may be held by a zone, a break, a fullscreen app…)
 //   raise     – "Raise your desk" prompt is up, waiting for "I'm standing"
-//   exercise  – guided routine: fullscreen ('full') or a small desk routine in the corner ('mini')
+//   exercise  – guided routine, full screen
+//   standing  – working standing up; the floating widget counts down and, when `paced`,
+//               brings up one small move every few minutes ("I'm standing · keep working")
 //   standing  – working standing up; a small widget counts down
 //   lower     – "Lower your desk" prompt, waiting for "Desk is down"
 //
@@ -34,7 +36,8 @@ class StandTimer extends EventEmitter {
     this.standStartedAt = 0;
     this.exerciseStartedAt = 0;
     this.held = null;        // why a due stand is waiting
-    this.mode = null;        // 'full' | 'mini' while exercising
+    this.mode = null;        // 'full' while exercising
+    this.paced = false;      // standing with paced moves in the widget
     this.warned = false;
   }
 
@@ -84,33 +87,30 @@ class StandTimer extends EventEmitter {
 
   /**
    * User: "I'm standing".
-   * @param {'full' | 'mini'} mode  full: follow along fullscreen; mini: keep working with the desk routine
+   * @param {'full' | 'mini'} mode  full: follow the routine full screen;
+   *                                mini: keep working, with paced moves in the floating widget
    */
   up(mode = 'full') {
     if (this.phase !== 'raise') return;
     this.standStartedAt = this.now();
     const routine = this.getSettings().standRoutine;
-    if (routine && routine !== 'none') {
-      this.phase = 'exercise';
-      this.#startExercise(mode);
+    if (!routine || routine === 'none') {
+      this.#startStanding(false);
+    } else if (mode === 'mini') {
+      this.#startStanding(true);
     } else {
-      this.#startStanding();
+      this.phase = 'exercise';
+      this.mode = 'full';
+      this.exerciseStartedAt = this.now();
+      this.emit('exercise', { routine, mode: 'full' });
+      this.emitState();
     }
   }
 
-  /** Switch between the fullscreen routine and the mini window mid-routine. */
+  /** From the fullscreen routine: "keep working" instead (paced moves in the widget). */
   setMode(mode) {
-    if (this.phase !== 'exercise' || mode === this.mode) return;
-    this.#startExercise(mode);
-  }
-
-  #startExercise(mode) {
-    this.mode = mode === 'mini' ? 'mini' : 'full';
-    this.exerciseStartedAt = this.now();
-    // The mini window always runs the desk routine: small moves you can do while you work.
-    const routine = this.mode === 'mini' ? 'desk' : this.getSettings().standRoutine;
-    this.emit('exercise', { routine, mode: this.mode });
-    this.emitState();
+    if (this.phase !== 'exercise' || mode !== 'mini') return;
+    this.#startStanding(true);
   }
 
   /** Exercise screen finished (or the user skipped the rest of the routine). */
@@ -119,13 +119,14 @@ class StandTimer extends EventEmitter {
     this.#startStanding();
   }
 
-  #startStanding() {
+  #startStanding(paced = false) {
     const s = this.getSettings();
     this.phase = 'standing';
+    this.paced = paced;
     // The routine counts toward standing time, so the timer starts from when you stood up.
     this.endsAt = this.standStartedAt + s.standMinutes * this.unitMs;
     if (this.endsAt <= this.now()) this.endsAt = this.now() + 60 * 1000;
-    this.emit('standing');
+    this.emit('standing', { paced });
     this.emitState();
   }
 
@@ -146,7 +147,7 @@ class StandTimer extends EventEmitter {
     if (this.phase !== 'lower') return;
     this.phase = 'standing';
     this.endsAt = this.now() + minutes * this.unitMs;
-    this.emit('standing');
+    this.emit('standing', { paced: this.paced });
     this.emitState();
   }
 
@@ -234,6 +235,7 @@ class StandTimer extends EventEmitter {
       phase: this.phase,
       held: this.held,
       mode: this.phase === 'exercise' ? this.mode : null,
+      paced: this.phase === 'standing' && this.paced,
       dueInMs: this.phase === 'sitting' ? Math.max(0, this.dueAt - now) : null,
       standingLeftMs: this.phase === 'standing' ? Math.max(0, this.endsAt - now) : null,
       standingTotalMs: this.phase === 'standing' ? this.endsAt - this.standStartedAt : null,

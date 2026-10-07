@@ -1,15 +1,22 @@
-// Shared by the fullscreen routine (stand.js) and the mini window (mini.js):
+// Shared by the fullscreen routine (stand.js) and the floating widget's paced moves (widget.js):
 // RoutinePlayer walks a routine's timeline (with pause / skip), Cues plays soft chimes and spoken cues.
 (function () {
   const { ROUTINES, GET_READY, getExercise } = window.StandExercises;
 
   class RoutinePlayer {
-    constructor(name, level = 1) {
-      const ids = ROUTINES[name] || ROUTINES.short;
+    /**
+     * @param {string} name   a routine from ROUTINES
+     * @param {number} level  progression level
+     * @param {{ exercises?: { id: string, ex: object }[], ready?: number }} opts
+     *   exercises – play these instead of a named routine (e.g. one paced move)
+     *   ready     – seconds of "get ready" before each exercise
+     */
+    constructor(name, level = 1, opts = {}) {
+      const list = opts.exercises || (ROUTINES[name] || ROUTINES.short).map((id) => ({ id, ex: getExercise(id, level) }));
+      const ready = opts.ready ?? GET_READY;
       let t = 0;
-      this.segments = ids.map((id, index) => {
-        const ex = getExercise(id, level);
-        const seg = { id, ex, index, start: t, readyEnd: t + GET_READY, end: t + GET_READY + ex.secs };
+      this.segments = list.map(({ id, ex }, index) => {
+        const seg = { id, ex, index, start: t, readyEnd: t + ready, end: t + ready + ex.secs };
         t = seg.end;
         return seg;
       });
@@ -62,7 +69,7 @@
       const state = ready
         ? { floor: 0, pose: { arms: seg.ex.at(0).pose.arms }, cue: 'Stand tall and breathe', count: '' }
         : seg.ex.at(t - seg.readyEnd);
-      const progress = ready ? (t - seg.start) / GET_READY : (t - seg.readyEnd) / seg.ex.secs;
+      const progress = ready ? (t - seg.start) / (seg.readyEnd - seg.start || 1) : (t - seg.readyEnd) / seg.ex.secs;
       return { t, seg, index, ready, state, progress: Math.min(1, Math.max(0, progress)), total: t / this.length };
     }
   }

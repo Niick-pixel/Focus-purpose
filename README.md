@@ -19,7 +19,10 @@ A calm break reminder for Windows. Every so often (45 minutes by default) it gen
     - **Stretch** (~3½ min, for people who sit all day): overhead reach, hip flexors, hamstrings at the desk, calves, a chest opener and chin tucks.
     - **Mix** of both.
     - **None**: just the reminders.
-  - **Two ways to follow along:** *Guide me* runs the routine full screen. *Keep working* opens a small card in the bottom-right corner with a ~5-minute desk routine you can do while you work (posture reset, holds, heel raises, flicks, weight shifts, the elevator, soft knee bends, shoulder-blade squeezes, release). It never takes keyboard focus, and you can switch between the two at any time.
+  - **A floating widget, so you never have to leave your work.** By default the whole standing session lives in one small card in the bottom-right corner that stays on top but never takes keyboard focus: *Time to stand* → a countdown pill → *Time to sit*. (Prefer the old way? Set *Stand reminders appear as → Full screen*.)
+  - **Two ways to follow along:**
+    - *I'm standing* (keep working): about once every 2½–4 minutes the pill expands into **one slow, ~30-second move**, then shrinks back. The moves are a posture reset, long holds, slow heel raises, shoulder-blade squeezes, quick flicks, weight shifts, the elevator, soft knee bends, and finally a release. Hover the pill to do the next move now; close a move to skip it, and the next one waits a bit longer.
+    - *Guide me*: the full routine on screen.
   - **Visuals:** a shaded figure demonstrates every move and highlights the muscle each stretch works, next to a side-view pelvic-floor diagram (tailbone to pubic bone, with the bladder and bowel resting on it) that lifts and softens with each cue.
   - **Pelvic floor guide:** what it is, how to find it, a good lift step by step, common mistakes, signs you're doing it right, why letting go matters, *the Knack*, and when to see a pelvic-health physio. It opens once before your first guided routine, and any time from the routine or Settings.
   - **Progression:** holds and flicks get longer as your sessions add up (levels 1–3).
@@ -68,7 +71,7 @@ npm run dist       # build the Windows installer into dist/ (run on Windows)
 | Standing desk rhythm (sit → raise → exercise → stand → lower) | `src/main/stand.js` |
 | Smart order between breaks and stands (learns your preferences) | `src/main/coordinator.js` |
 | Standing screens, figure rig (two-bone IK), pelvic-floor diagrams, routines, guide | `src/renderer/stand.*`, `src/renderer/stand/`, `src/renderer/guide.*` |
-| Mini desk-routine window and the floating standing widget | `src/renderer/mini.*`, `src/renderer/widget.*` |
+| Floating standing widget: prompts, countdown, paced moves | `src/renderer/widget.*` |
 | Break zones (time ranges that hold breaks) | `src/main/zones.js`, `src/renderer/zones-view.js` |
 | Auto-updates (electron-updater + GitHub Releases) | `src/main/updater.js` |
 | Settings saved to `%APPDATA%/Focus Point/settings.json` | `src/main/store.js` |

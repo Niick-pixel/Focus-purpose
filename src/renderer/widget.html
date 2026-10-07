@@ -5,27 +5,90 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'" />
   <title>Standing</title>
   <link rel="stylesheet" href="theme.css" />
+  <link rel="stylesheet" href="stand.css" />
   <link rel="stylesheet" href="widget.css" />
 </head>
 <body>
-  <div class="pill" id="pill">
-    <div class="ring">
-      <svg viewBox="0 0 40 40" aria-hidden="true">
-        <circle class="track" cx="20" cy="20" r="17" />
-        <circle class="fill" id="ring" cx="20" cy="20" r="17" />
-      </svg>
-      <!-- tiny standing figure -->
-      <svg class="glyph" viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="12" cy="5" r="2.2" />
-        <path d="M12 8.5v6.5M12 15l-2.6 5M12 15l2.6 5M8.6 11.2l3.4-1.6 3.4 1.6" />
-      </svg>
-    </div>
-    <div class="text">
-      <span class="label">Standing</span>
-      <span class="time" id="time">15:00</span>
-    </div>
-    <button class="sit" id="sit" title="Sit down now">Sit</button>
+  <!-- One floating card for the whole standing session; it never takes keyboard focus. -->
+  <div class="dock" id="dock" data-view="prompt">
+
+    <!-- Time to stand / Time to sit -->
+    <section class="prompt">
+      <header class="p-head">
+        <svg class="p-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 9h18M6 9v11M18 9v11M9 4h6v5H9z" />
+        </svg>
+        <span class="eyebrow-mini">Standing time</span>
+        <span class="p-links" id="pLinks"></span>
+      </header>
+      <h1 class="p-title" id="pTitle">Time to stand</h1>
+      <p class="p-sub" id="pSub"></p>
+      <div class="p-actions">
+        <button class="pbtn primary" id="pPrimary">I’m standing</button>
+        <button class="pbtn" id="pSecondary">Guide me</button>
+      </div>
+    </section>
+
+    <!-- Standing: countdown pill -->
+    <section class="pill">
+      <div class="ring">
+        <svg viewBox="0 0 40 40" aria-hidden="true">
+          <circle class="track" cx="20" cy="20" r="17" />
+          <circle class="fill" id="ring" cx="20" cy="20" r="17" />
+        </svg>
+        <svg class="glyph" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="5" r="2.2" />
+          <path d="M12 8.5v6.5M12 15l-2.6 5M12 15l2.6 5M8.6 11.2l3.4-1.6 3.4 1.6" />
+        </svg>
+      </div>
+      <div class="text">
+        <span class="label" id="pillLabel">Standing</span>
+        <span class="time" id="time">15:00</span>
+      </div>
+      <div class="pill-actions">
+        <button class="mini-btn" id="moveNow" title="Do the next move now" hidden>Move</button>
+        <button class="mini-btn" id="sit" title="Sit down now">Sit</button>
+      </div>
+    </section>
+
+    <!-- One paced move -->
+    <section class="move" id="card">
+      <header class="bar">
+        <span class="eyebrow-mini" id="mEyebrow">Gentle move</span>
+        <div class="tools">
+          <button class="tool" id="voice" title="Spoken cues" aria-label="Spoken cues" aria-pressed="false">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v10H9l-4 4v-4H4z"/><path d="M8 9h8M8 12h5"/></svg>
+          </button>
+          <button class="tool" id="help" title="How to use your pelvic floor" aria-label="Pelvic floor guide">?</button>
+          <button class="tool" id="later" title="Not now — skip this move" aria-label="Skip this move">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </div>
+      </header>
+      <div class="body">
+        <div class="visual" id="visual">
+          <svg id="figure" aria-hidden="true"></svg>
+          <svg id="pelvis" aria-hidden="true"></svg>
+        </div>
+        <div class="mtext">
+          <p class="title" id="mTitle"></p>
+          <p class="cue" id="mCue"></p>
+          <p class="count" id="mCount"></p>
+        </div>
+      </div>
+      <footer class="foot">
+        <div class="progress"><div class="progress-bar" id="mBar"></div></div>
+        <button class="ctl" id="mPause" title="Pause" aria-label="Pause">
+          <svg class="i-pause" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+          <svg class="i-play" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M7 5l12 7-12 7z"/></svg>
+        </button>
+      </footer>
+    </section>
   </div>
+
+  <script src="stand/visuals.js"></script>
+  <script src="stand/exercises.js"></script>
+  <script src="stand/player.js"></script>
   <script src="widget.js"></script>
 </body>
 </html>

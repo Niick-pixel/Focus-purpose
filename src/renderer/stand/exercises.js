@@ -307,6 +307,140 @@
     },
   });
 
+  // ---- Paced moves: one small move at a time while you keep working ----------------
+  // The floating widget brings up one of these every few minutes during a stand, then gets
+  // out of the way. Fewer reps and longer rests than the guided routines.
+
+  const PACED = {
+    posture: EXERCISES.posture,
+    holds: (level) => {
+      const { hold } = LEVELS[level];
+      const len = hold + 8; // 1 s lift, hold, 1 s release, 6 s easy breathing
+      return {
+        title: 'Long holds',
+        focus: 'Pelvic floor',
+        how: `Lift and hold for ${hold} seconds while you keep breathing, then let go completely and rest.`,
+        secs: 3 * len,
+        at: reps(3, len, (t) => {
+          const floor = ramp(t, 0, 1) * (1 - ramp(t, hold + 1, hold + 2));
+          let cue = 'Rest — breathe easy';
+          if (t < 1) cue = 'Breathe out, lift';
+          else if (t < hold + 1) cue = `Hold… ${Math.ceil(hold + 1 - t)}`;
+          else if (t < hold + 2) cue = 'Let go';
+          return { floor, pose: pose(), cue };
+        }),
+      };
+    },
+    heels: {
+      title: 'Slow heel raises',
+      focus: 'Calves',
+      how: 'Rise onto the balls of your feet slowly, pause, and lower all the way down.',
+      secs: 25,
+      at: reps(5, 5, (t) => {
+        const heel = ramp(t, 0, 1.6) * (1 - ramp(t, 2.4, 4.2));
+        return { floor: 0.6 * heel, pose: pose({ heel, focus: 'calf' }), cue: t < 2.4 ? 'Rise slowly' : 'Lower all the way' };
+      }),
+    },
+    blades: {
+      title: 'Shoulder-blade squeeze',
+      focus: 'Upper back',
+      how: 'Draw your shoulder blades back and down, hold, then let go. Hands can stay on the keyboard.',
+      secs: 24,
+      at: reps(4, 6, (t) => {
+        const on = ramp(t, 0, 1) * (1 - ramp(t, 3.5, 4.5));
+        return { floor: 0, pose: pose({ lean: 0.22 * on, focus: 'shoulders' }), cue: t < 1 ? 'Back and down' : t < 3.5 ? 'Hold' : 'Let go' };
+      }),
+    },
+    flicks: {
+      title: 'Quick flicks',
+      focus: 'Pelvic floor',
+      how: 'A quick squeeze, then let go fully. Unhurried — one every three seconds.',
+      secs: 18,
+      at: reps(6, 3, (t) => {
+        const floor = t < 0.4 ? ramp(t, 0, 0.35) : 1 - ramp(t, 0.4, 0.9);
+        return { floor, pose: pose(), cue: t < 0.7 ? 'Squeeze' : 'Let go' };
+      }),
+    },
+    shift: {
+      title: 'Weight shifts',
+      focus: 'Feet & balance',
+      how: 'Slowly rock toward your toes, then back to your heels.',
+      secs: 28,
+      at: reps(4, 7, (t) => {
+        const x = Math.sin((TAU * t) / 7);
+        return { floor: 0.15, pose: pose({ swayX: 0.5 * x, heel: Math.max(0, x) * 0.2, focus: 'calf' }), cue: x >= 0 ? 'Toward your toes' : 'Back to your heels' };
+      }),
+    },
+    elevator: {
+      title: 'The elevator',
+      focus: 'Pelvic floor',
+      how: 'Lift in three slow steps, then lower one floor at a time.',
+      secs: 30,
+      at: reps(2, 15, (t) => {
+        const steps = [0.33, 0.66, 1];
+        let floor = 0;
+        let cue = 'Rest';
+        if (t < 6) {
+          const i = Math.min(2, Math.floor(t / 2));
+          floor = (i ? steps[i - 1] : 0) + (steps[i] - (i ? steps[i - 1] : 0)) * ramp(t - i * 2, 0, 0.9);
+          cue = `Up — floor ${i + 1}`;
+        } else if (t < 12) {
+          const i = Math.min(2, Math.floor((t - 6) / 2));
+          const from = steps[2 - i];
+          const to = i === 2 ? 0 : steps[1 - i];
+          floor = from + (to - from) * ramp(t - 6 - i * 2, 0, 0.9);
+          cue = `Down — floor ${3 - i}`;
+        }
+        return { floor, pose: pose(), cue };
+      }),
+    },
+    knees: {
+      title: 'Soft knee bends',
+      focus: 'Pelvic floor',
+      how: 'Bend your knees a little as you breathe in; breathe out, lift and straighten.',
+      secs: 24,
+      at: reps(4, 6, (t) => {
+        const down = t < 3;
+        const squat = down ? 0.2 * ramp(t, 0, 2.6) : 0.2 * (1 - ramp(t, 3, 5.6));
+        return { floor: down ? 0.05 : 0.75 * ramp(t, 3, 3.9), pose: pose({ squat }), cue: down ? 'Breathe in, knees soft' : 'Breathe out, lift & straighten' };
+      }),
+    },
+    release: {
+      title: 'Let it all go',
+      focus: 'Pelvic floor',
+      how: 'Breathe low into your belly and let the pelvic floor soften completely.',
+      secs: 16,
+      at: (t) => {
+        const c = t % 8;
+        const inhale = c < 4;
+        const floor = inhale ? -0.3 * ramp(c, 0, 3.5) : -0.3 + 0.3 * ramp(c, 4, 7.5);
+        return { floor, pose: pose(), cue: inhale ? 'Breathe into your belly — soften' : 'Breathe out slowly' };
+      },
+    },
+  };
+  // Order through a stand; the release always comes last.
+  const PACED_ORDER = ['posture', 'holds', 'heels', 'blades', 'flicks', 'shift', 'elevator', 'knees', 'release'];
+
+  function getPaced(id, level = 1) {
+    const ex = PACED[id];
+    const resolved = typeof ex === 'function' ? ex(LEVELS[level] ? level : 1) : ex;
+    return { focus: 'Pelvic floor', ...resolved };
+  }
+
+  /**
+   * When each paced move starts, in ms after standing up, for a stand of `totalMs`.
+   * The first comes after one minute, then one every 2½–4 minutes; the release is last.
+   */
+  function pacedSchedule(totalMs, unitMs = 60000) {
+    const first = 1 * unitMs;
+    const room = totalMs - first - 1.5 * unitMs;
+    if (room < 0) return [{ id: 'release', at: Math.max(0, totalMs - 1.5 * unitMs) }];
+    const interval = Math.min(4 * unitMs, Math.max(2.5 * unitMs, room / (PACED_ORDER.length - 1)));
+    const n = Math.min(PACED_ORDER.length, Math.floor(room / interval) + 1);
+    const ids = [...PACED_ORDER.slice(0, n - 1), 'release'];
+    return ids.map((id, i) => ({ id, at: first + i * interval }));
+  }
+
   // Default focus for the pelvic-floor set.
   for (const id of ['find', 'elevator', 'squats', 'heels', 'tilts', 'circles', 'march', 'release']) {
     EXERCISES[id].focus = EXERCISES[id].focus || 'Pelvic floor';
@@ -352,7 +486,7 @@
     return 1;
   }
 
-  const api = { EXERCISES, ROUTINES, ROUTINE_NAMES, PELVIS_VIEW, LEVELS, GET_READY, getExercise, routineLength, levelFor };
+  const api = { EXERCISES, ROUTINES, ROUTINE_NAMES, PELVIS_VIEW, PACED, PACED_ORDER, getPaced, pacedSchedule, LEVELS, GET_READY, getExercise, routineLength, levelFor };
   if (typeof window !== 'undefined') window.StandExercises = api;
   if (typeof module !== 'undefined') module.exports = api;
 })();

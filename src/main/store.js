@@ -16,6 +16,7 @@ const DEFAULTS = {
   standRoutine: 'short', // 'short' | 'full' (pelvic floor) | 'stretch' | 'mix' | 'none'
   standVoice: false, // speak the exercise cues
   standGuideSeen: false,
+  standPrompt: 'floating', // 'floating' (small card in the corner) | 'fullscreen'
   smartOrder: true, // breaks and stands never overlap; learns which you prefer (coordinator.js)
   coordination: null, // what smart order has learned // the pelvic floor guide shows once before the first guided routine
 
