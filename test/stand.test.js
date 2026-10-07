@@ -126,24 +126,44 @@ test('regular breaks wait while standing, then follow after a heads-up', () => {
   assert.deepStrictEqual(breaks, ['break']);
 });
 
-test('"Keep working" runs the desk routine in the mini window; modes can switch mid-routine', () => {
-  const { stand, events } = setup({ standRoutine: 'stretch' });
+test('"I\'m standing · keep working" goes straight to standing with paced moves', () => {
+  const { stand, events, advance } = setup({ standRoutine: 'stretch' });
   stand.standNow();
   stand.up('mini');
+  assert.strictEqual(stand.phase, 'standing');
+  assert.deepStrictEqual(events.at(-1), ['standing', { paced: true }]);
+  assert.strictEqual(stand.state().paced, true);
+  assert.ok(!events.some((e) => e[0] === 'exercise'), 'no fullscreen routine');
+  // Paced moves carry on through "5 more minutes".
+  advance(15 * 60000);
+  assert.strictEqual(stand.phase, 'lower');
+  assert.strictEqual(stand.state().paced, false, 'only while standing');
+  stand.moreTime(5);
+  assert.deepStrictEqual(events.at(-1), ['standing', { paced: true }]);
+});
+
+test('from the fullscreen routine, "keep working instead" switches to paced standing', () => {
+  const { stand, events } = setup({ standRoutine: 'short' });
+  stand.standNow();
+  stand.up('full');
   assert.strictEqual(stand.phase, 'exercise');
-  assert.deepStrictEqual(events.at(-1), ['exercise', { routine: 'desk', mode: 'mini' }]);
-  assert.strictEqual(stand.state().mode, 'mini');
-
-  stand.setMode('mini'); // no-op: already there
-  assert.strictEqual(events.filter((e) => e[0] === 'exercise').length, 1);
-
-  stand.setMode('full');
-  assert.deepStrictEqual(events.at(-1), ['exercise', { routine: 'stretch', mode: 'full' }]);
-  stand.exercisesDone();
+  stand.setMode('mini');
   assert.strictEqual(stand.phase, 'standing');
-  assert.strictEqual(stand.state().mode, null);
+  assert.deepStrictEqual(events.at(-1), ['standing', { paced: true }]);
   stand.setMode('mini'); // ignored outside the routine
-  assert.strictEqual(stand.phase, 'standing');
+  assert.strictEqual(events.filter((e) => e[0] === 'standing').length, 1);
+});
+
+test('after the fullscreen routine you just stand (no extra moves); "none" never paces', () => {
+  const a = setup({ standRoutine: 'short' });
+  a.stand.standNow();
+  a.stand.up();
+  a.stand.exercisesDone();
+  assert.deepStrictEqual(a.events.at(-1), ['standing', { paced: false }]);
+  const b = setup({ standRoutine: 'none' });
+  b.stand.standNow();
+  b.stand.up('mini');
+  assert.deepStrictEqual(b.events.at(-1), ['standing', { paced: false }]);
 });
 
 test('"Guide me" (default) runs the chosen routine full screen', () => {

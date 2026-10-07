@@ -49,8 +49,7 @@ let isFullscreen = () => false;
 let stand;
 let coord;
 let standWins = [];
-let widgetWin = null;
-let miniWin = null;       // desk routine in the corner ("I'm standing · Keep working")
+let dockWin = null;       // floating standing widget (prompts, countdown, paced moves)
 let guideWin = null;      // pelvic floor guide
 let exerciseRoutine = null;
 let alternateTurn = 0; // 'alternate' activity: breathe, eyes, breathe, ...
@@ -262,6 +261,7 @@ function standPayload(mode, primary) {
   return {
     mode, primary, theme: s.theme, routine: exerciseRoutine || s.standRoutine, voice: !!s.standVoice, level,
     guideSeen: !!s.standGuideSeen, stoodMs: st.standingForMs || 0,
+    paced: !!st.paced, unitMs: FAST ? 1000 : 60000,
   };
 }
 
@@ -318,55 +318,23 @@ function closeStandWindows() {
   setTimeout(() => destroyWindows(closing), 1600);
 }
 
-function openWidget() {
-  if (widgetWin && !widgetWin.isDestroyed()) return;
-  const area = screen.getPrimaryDisplay().workArea;
-  const width = 232;
-  const height = 60;
-  widgetWin = new BrowserWindow({
-    x: area.x + area.width - width - 16,
-    y: area.y + area.height - height - 16,
-    width,
-    height,
-    frame: false,
-    transparent: true,
-    backgroundColor: '#00000000',
-    resizable: false,
-    minimizable: false,
-    maximizable: false,
-    skipTaskbar: true,
-    alwaysOnTop: true,
-    focusable: false,
-    hasShadow: false,
-    show: false,
-    webPreferences: {
-      preload: path.join(__dirname, '..', 'preload.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-    },
-  });
-  widgetWin.setAlwaysOnTop(true, 'floating');
-  widgetWin.loadFile(path.join(RENDERER, 'widget.html'));
-  widgetWin.once('ready-to-show', () => widgetWin?.showInactive());
-  widgetWin.on('closed', () => { widgetWin = null; });
-}
+// The dock: one small floating window in the bottom-right corner for the whole standing
+// session while you keep working — the "time to stand" prompt, the countdown pill, one
+// paced move every few minutes, and the "time to sit" prompt. It never takes focus, so
+// whatever you're working in stays active, and it grows/shrinks around its bottom-right corner.
+const DOCK_MARGIN = 14;
 
-function closeWidget() {
-  if (widgetWin && !widgetWin.isDestroyed()) widgetWin.destroy();
-  widgetWin = null;
-}
-
-function openMini() {
-  if (miniWin && !miniWin.isDestroyed()) {
-    miniWin.webContents.send('stand:mode', standPayload('mini', true));
+function openDock(mode) {
+  if (dockWin && !dockWin.isDestroyed()) {
+    dockWin.webContents.send('stand:mode', standPayload(mode, true));
     return;
   }
   const area = screen.getPrimaryDisplay().workArea;
-  const width = 380;
-  const height = 218;
-  miniWin = new BrowserWindow({
-    x: area.x + area.width - width - 12,
-    y: area.y + area.height - height - 12,
+  const width = 360;
+  const height = 168;
+  dockWin = new BrowserWindow({
+    x: area.x + area.width - width - DOCK_MARGIN,
+    y: area.y + area.height - height - DOCK_MARGIN,
     width,
     height,
     frame: false,
@@ -375,9 +343,10 @@ function openMini() {
     resizable: false,
     minimizable: false,
     maximizable: false,
+    fullscreenable: false,
     skipTaskbar: true,
     alwaysOnTop: true,
-    focusable: false, // never steals the keyboard from what you're working on
+    focusable: false, // clicks work, but the keyboard stays with what you're working on
     hasShadow: false,
     show: false,
     webPreferences: {
@@ -388,22 +357,45 @@ function openMini() {
       autoplayPolicy: 'no-user-gesture-required',
     },
   });
-  miniWin.setAlwaysOnTop(true, 'floating');
-  miniWin.loadFile(path.join(RENDERER, 'mini.html'));
-  miniWin.webContents.once('did-finish-load', () => {
-    miniWin?.webContents.send('stand:mode', standPayload('mini', true));
-    miniWin?.showInactive();
+  dockWin.setAlwaysOnTop(true, 'pop-up-menu');
+  dockWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  dockWin.loadFile(path.join(RENDERER, 'widget.html'));
+  dockWin.webContents.once('did-finish-load', () => {
+    dockWin?.webContents.send('stand:mode', standPayload(mode, true));
+    dockWin?.showInactive();
   });
-  miniWin.on('closed', () => { miniWin = null; });
+  // Some apps push themselves to the top; quietly stay above them without taking focus.
+  const keepOnTop = setInterval(() => {
+    if (dockWin && !dockWin.isDestroyed() && dockWin.isVisible()) dockWin.moveTop();
+  }, 5000);
+  dockWin.on('closed', () => {
+    clearInterval(keepOnTop);
+    dockWin = null;
+  });
 }
 
-function closeMini() {
-  if (!miniWin || miniWin.isDestroyed()) return;
-  const win = miniWin;
-  miniWin = null;
+/** The dock asks for a new size; keep its bottom-right corner where it is. */
+function resizeDock(width, height) {
+  if (!dockWin || dockWin.isDestroyed()) return;
+  const w = Math.round(Math.min(460, Math.max(180, width)));
+  const h = Math.round(Math.min(320, Math.max(56, height)));
+  const b = dockWin.getBounds();
+  const area = screen.getDisplayMatching(b).workArea;
+  const x = Math.min(area.x + area.width - w, Math.max(area.x, b.x + b.width - w));
+  const y = Math.min(area.y + area.height - h, Math.max(area.y, b.y + b.height - h));
+  dockWin.setBounds({ x, y, width: w, height: h });
+}
+
+function closeDock() {
+  if (!dockWin || dockWin.isDestroyed()) return;
+  const win = dockWin;
+  dockWin = null;
   win.webContents.send('stand:closing');
   setTimeout(() => { if (!win.isDestroyed()) win.destroy(); }, 600);
 }
+
+/** Stand prompts as the floating dock (default) or full screen (Settings → Stand). */
+const floatingPrompts = () => store.get().standPrompt !== 'fullscreen';
 
 function openGuide() {
   if (guideWin && !guideWin.isDestroyed()) {
@@ -596,6 +588,7 @@ function registerIpc() {
   ipcMain.on('stand:up', (_e, mode) => stand.up(mode === 'mini' ? 'mini' : 'full'));
   ipcMain.on('stand:mode', (_e, mode) => stand.setMode(mode === 'mini' ? 'mini' : 'full'));
   ipcMain.on('guide:open', () => openGuide());
+  ipcMain.on('dock:resize', (_e, { width, height }) => resizeDock(width, height));
   ipcMain.on('stand:notNow', () => stand.notNow());
   ipcMain.on('stand:skip', () => stand.skip());
   ipcMain.on('stand:exercisesDone', () => stand.exercisesDone());
@@ -701,34 +694,31 @@ app.whenReady().then(() => {
   });
   stand.on('raise', () => {
     if (settingsWin && !settingsWin.isDestroyed()) settingsWin.webContents.send('preview:stop');
-    openStandWindows('raise');
+    if (floatingPrompts()) openDock('raise');
+    else openStandWindows('raise');
   });
-  stand.on('exercise', ({ routine, mode }) => {
+  stand.on('exercise', ({ routine }) => {
     exerciseRoutine = routine;
-    if (mode === 'mini') {
-      closeStandWindows();
-      openMini();
-    } else {
-      closeMini();
-      openStandWindows('exercise');
-    }
+    closeDock();
+    openStandWindows('exercise');
   });
   stand.on('standing', () => {
     exerciseRoutine = null;
     closeStandWindows();
-    closeMini();
-    openWidget();
+    openDock('standing');
   });
   stand.on('lower', () => {
-    closeWidget();
-    closeMini();
-    openStandWindows('lower');
+    if (floatingPrompts()) {
+      openDock('lower');
+    } else {
+      closeDock();
+      openStandWindows('lower');
+    }
   });
   stand.on('closed', () => {
     exerciseRoutine = null;
     closeStandWindows();
-    closeMini();
-    closeWidget();
+    closeDock();
   });
   timer.on('warning', ({ secondsLeft }) => {
     if (!Notification.isSupported()) return;

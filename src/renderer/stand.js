@@ -64,7 +64,7 @@ function showDesk(direction) {
     $('deskTitle').textContent = 'Time to stand';
     const guided = payload.routine !== 'none';
     $('deskSub').textContent = guided
-      ? 'Raise your desk. Then follow along full screen, or keep working with a small desk routine in the corner.'
+      ? 'Raise your desk. Follow along full screen, or keep working with a small move in the corner every few minutes.'
       : 'Raise your desk and keep working on your feet.';
     $('deskPrimary').textContent = guided ? 'I’m standing · Guide me' : 'I’m standing';
     $('deskPrimary').onclick = () => window.api.standUp('full');

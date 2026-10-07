@@ -509,6 +509,7 @@ textarea:focus { outline: none; border-color: var(--accent); }
 .update-actions .btn:disabled { opacity: 0.5; cursor: default; }
 
 /* ---- Stand ---------------------------------------------------------------- */
+.segmented.two { grid-template-columns: repeat(2, 1fr); }
 .segmented.three { grid-template-columns: repeat(3, 1fr); }
 .segmented.five { grid-template-columns: repeat(5, 1fr); }
 .stand-buttons { margin: 8px 0 4px; }

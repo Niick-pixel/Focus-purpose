@@ -63,6 +63,34 @@ test('desk routine: about five minutes, hands-free moves, pelvic view for floor-
   for (const id of X.PELVIS_VIEW) assert.ok(X.EXERCISES[id], `${id} exists`);
 });
 
+test('paced moves: short, slow, valid, and spread through the stand with the release last', () => {
+  for (const level of [1, 2, 3]) {
+    for (const id of X.PACED_ORDER) {
+      const ex = X.getPaced(id, level);
+      assert.ok(ex.title && ex.how && ex.focus, `${id} has title, how and focus`);
+      assert.ok(ex.secs <= 54, `${id} is short (${ex.secs}s)`);
+      for (let t = 0; t < ex.secs; t += 0.1) {
+        const r = ex.at(t);
+        assert.ok(Number.isFinite(r.floor) && r.floor >= -0.3 && r.floor <= 1, `${id} floor at ${t}`);
+        assert.ok(r.cue, `${id} cue at ${t}`);
+        assert.ok(!['overhead', 'behind', 'forward', 'desk'].includes(r.pose.arms), `${id} keeps hands free to work`);
+      }
+    }
+  }
+  // Slower than the guided versions: fewer flicks, longer rests between holds.
+  assert.ok(X.getPaced('flicks', 1).secs / 6 > X.getExercise('flicks', 1).secs / X.LEVELS[1].flicks);
+
+  const MIN = 60000;
+  const s15 = X.pacedSchedule(15 * MIN);
+  assert.strictEqual(s15[0].at, 1 * MIN, 'first move after a minute');
+  assert.strictEqual(s15.at(-1).id, 'release');
+  for (let i = 1; i < s15.length; i++) assert.ok(s15[i].at - s15[i - 1].at >= 2.5 * MIN, 'at least 2½ min apart');
+  assert.ok(s15.at(-1).at <= 13.5 * MIN, 'last one fits before sitting down');
+  assert.ok(X.pacedSchedule(60 * MIN).length === X.PACED_ORDER.length);
+  assert.ok(X.pacedSchedule(60 * MIN).every((s, i, a) => i === 0 || s.at - a[i - 1].at <= 4 * MIN), 'never more than 4 min apart');
+  assert.deepStrictEqual(X.pacedSchedule(2 * MIN).map((s) => s.id), ['release']);
+});
+
 test('stretches highlight the muscle they work', () => {
   const spots = { reach: 'spine', hipflexor: 'hipFront', hamstring: 'backThigh', calf: 'calf', chest: 'chest', chin: 'neck' };
   for (const [id, spot] of Object.entries(spots)) {
