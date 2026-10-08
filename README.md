@@ -19,9 +19,8 @@ A calm break reminder for Windows. Every so often (45 minutes by default) it gen
     - **Stretch** (~3½ min, for people who sit all day): overhead reach, hip flexors, hamstrings at the desk, calves, a chest opener and chin tucks.
     - **Mix** of both.
     - **None**: just the reminders.
-  - **A floating widget, so you never have to leave your work.** By default the whole standing session lives in one small card in the bottom-right corner that stays on top but never takes keyboard focus: *Time to stand* → a countdown pill → *Time to sit*. (Prefer the old way? Set *Stand reminders appear as → Full screen*.)
-  - **Two ways to follow along:**
-    - *I'm standing* (keep working): about once every 2½–4 minutes the pill expands into **one slow, ~30-second move**, then shrinks back. The moves are a posture reset, long holds, slow heel raises, shoulder-blade squeezes, quick flicks, weight shifts, the elevator, soft knee bends, and finally a release. Hover the pill to do the next move now; close a move to skip it, and the next one waits a bit longer.
+  - **Two ways to follow along** (the *Time to stand* and *Time to sit* reminders are full screen):
+    - *Keep working*: a small widget sits in the bottom-right corner, on top of everything but never taking keyboard focus, so you don't have to minimize anything. About once every 2½–4 minutes it expands into **one slow, ~30-second move**, then shrinks back. The moves are a posture reset, long holds, slow heel raises, shoulder-blade squeezes, quick flicks, weight shifts, the elevator, soft knee bends, and finally a release. Hover the pill to do the next move now; close a move to skip it, and the next one waits a bit longer.
     - *Guide me*: the full routine on screen.
   - **Visuals:** a shaded figure demonstrates every move and highlights the muscle each stretch works, next to a side-view pelvic-floor diagram (tailbone to pubic bone, with the bladder and bowel resting on it) that lifts and softens with each cue.
   - **Pelvic floor guide:** what it is, how to find it, a good lift step by step, common mistakes, signs you're doing it right, why letting go matters, *the Knack*, and when to see a pelvic-health physio. It opens once before your first guided routine, and any time from the routine or Settings.

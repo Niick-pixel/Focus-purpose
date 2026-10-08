@@ -9,25 +9,8 @@
   <link rel="stylesheet" href="widget.css" />
 </head>
 <body>
-  <!-- One floating card for the whole standing session; it never takes keyboard focus. -->
-  <div class="dock" id="dock" data-view="prompt">
-
-    <!-- Time to stand / Time to sit -->
-    <section class="prompt">
-      <header class="p-head">
-        <svg class="p-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M3 9h18M6 9v11M18 9v11M9 4h6v5H9z" />
-        </svg>
-        <span class="eyebrow-mini">Standing time</span>
-        <span class="p-links" id="pLinks"></span>
-      </header>
-      <h1 class="p-title" id="pTitle">Time to stand</h1>
-      <p class="p-sub" id="pSub"></p>
-      <div class="p-actions">
-        <button class="pbtn primary" id="pPrimary">I’m standing</button>
-        <button class="pbtn" id="pSecondary">Guide me</button>
-      </div>
-    </section>
+  <!-- Floating card while you stand; it never takes keyboard focus. -->
+  <div class="dock" id="dock" data-view="pill">
 
     <!-- Standing: countdown pill -->
     <section class="pill">
