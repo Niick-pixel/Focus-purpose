@@ -318,9 +318,9 @@ function closeStandWindows() {
   setTimeout(() => destroyWindows(closing), 1600);
 }
 
-// The dock: one small floating window in the bottom-right corner for the whole standing
-// session while you keep working — the "time to stand" prompt, the countdown pill, one
-// paced move every few minutes, and the "time to sit" prompt. It never takes focus, so
+// The dock: one small floating window in the bottom-right corner while you stand — a
+// countdown pill that, when you chose to keep working, opens into one slow move every few
+// minutes. (The "time to stand / sit" reminders are full screen.) It never takes focus, so
 // whatever you're working in stays active, and it grows/shrinks around its bottom-right corner.
 const DOCK_MARGIN = 14;
 
@@ -330,8 +330,8 @@ function openDock(mode) {
     return;
   }
   const area = screen.getPrimaryDisplay().workArea;
-  const width = 360;
-  const height = 168;
+  const width = 252; // starts as the countdown pill
+  const height = 64;
   dockWin = new BrowserWindow({
     x: area.x + area.width - width - DOCK_MARGIN,
     y: area.y + area.height - height - DOCK_MARGIN,
@@ -393,9 +393,6 @@ function closeDock() {
   win.webContents.send('stand:closing');
   setTimeout(() => { if (!win.isDestroyed()) win.destroy(); }, 600);
 }
-
-/** Stand prompts as the floating dock (default) or full screen (Settings → Stand). */
-const floatingPrompts = () => store.get().standPrompt !== 'fullscreen';
 
 function openGuide() {
   if (guideWin && !guideWin.isDestroyed()) {
@@ -694,8 +691,7 @@ app.whenReady().then(() => {
   });
   stand.on('raise', () => {
     if (settingsWin && !settingsWin.isDestroyed()) settingsWin.webContents.send('preview:stop');
-    if (floatingPrompts()) openDock('raise');
-    else openStandWindows('raise');
+    openStandWindows('raise');
   });
   stand.on('exercise', ({ routine }) => {
     exerciseRoutine = routine;
@@ -708,12 +704,8 @@ app.whenReady().then(() => {
     openDock('standing');
   });
   stand.on('lower', () => {
-    if (floatingPrompts()) {
-      openDock('lower');
-    } else {
-      closeDock();
-      openStandWindows('lower');
-    }
+    closeDock();
+    openStandWindows('lower');
   });
   stand.on('closed', () => {
     exerciseRoutine = null;

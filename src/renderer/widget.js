@@ -1,15 +1,14 @@
-// Floating standing widget ("the dock"). One small card in the corner for the whole
-// standing session while you keep working:
-//   prompt – "Time to stand" / "Time to sit"
+// Floating standing widget ("the dock"): a small card in the corner while you stand.
+// The "time to stand / sit" reminders are full screen; this only covers the standing part.
 //   pill   – countdown while you stand
-//   move   – one paced move (when you chose "I'm standing" and keep working); every few
-//            minutes it expands for ~30 seconds, then shrinks back to the pill.
+//   move   – one slow move (when you chose "Keep working"); every few minutes the pill
+//            expands for ~30 seconds, then shrinks back.
 const $ = (id) => document.getElementById(id);
 const { Figure, PelvisSide } = window.StandVisuals;
 const { PELVIS_VIEW, getPaced, pacedSchedule } = window.StandExercises;
 const { RoutinePlayer, Cues, countLabel } = window.StandPlayer;
 const CIRC = 2 * Math.PI * 17;
-const SIZE = { prompt: [360, 168], pill: [252, 64], move: [384, 212] };
+const SIZE = { pill: [252, 64], move: [384, 212] };
 const READY_SECS = 3;
 
 let payload = {};
@@ -31,49 +30,6 @@ function setView(v) {
   view = v;
   $('dock').dataset.view = v;
   window.api.dockResize(...SIZE[v]);
-}
-
-function button(label, onClick) {
-  const b = document.createElement('button');
-  b.textContent = label;
-  b.addEventListener('click', onClick);
-  return b;
-}
-
-// ---- prompts ------------------------------------------------------------------
-
-function showPrompt(kind) {
-  stopMove();
-  const links = $('pLinks');
-  links.replaceChildren();
-  if (kind === 'raise') {
-    const guided = payload.routine !== 'none';
-    $('pTitle').textContent = 'Time to stand';
-    $('pSub').textContent = guided
-      ? 'Raise your desk and keep working. A small move every few minutes, nothing more.'
-      : 'Raise your desk and keep working on your feet.';
-    $('pPrimary').textContent = 'I’m standing';
-    $('pPrimary').onclick = () => window.api.standUp(guided ? 'mini' : 'full');
-    $('pSecondary').hidden = !guided;
-    $('pSecondary').textContent = 'Guide me';
-    $('pSecondary').title = 'Follow the full routine on screen';
-    $('pSecondary').onclick = () => window.api.standUp('full');
-    links.append(button('Not now', () => window.api.standNotNow()), button('Skip', () => window.api.standSkip()));
-    links.firstChild.title = 'Remind me in 10 minutes';
-    cues.chime(587, 0.05, 0.9);
-  } else {
-    const minutes = Math.max(1, Math.round((payload.stoodMs || 0) / 60000));
-    $('pTitle').textContent = 'Time to sit';
-    $('pSub').textContent = `You stood for ${minutes} minute${minutes === 1 ? '' : 's'}. Lower your desk and let your shoulders drop.`;
-    $('pPrimary').textContent = 'Desk is down';
-    $('pPrimary').onclick = () => window.api.standDown();
-    $('pSecondary').hidden = false;
-    $('pSecondary').textContent = '5 more min';
-    $('pSecondary').title = 'Stand a little longer';
-    $('pSecondary').onclick = () => window.api.standMore();
-    cues.chime(440, 0.05, 0.9);
-  }
-  setView('prompt');
 }
 
 // ---- standing pill & pacing ---------------------------------------------------------
@@ -221,15 +177,21 @@ window.api.onStandMode((p) => {
   document.documentElement.dataset.theme = payload.theme || 'night';
   cues.voiceOn = !!payload.voice;
   renderVoice();
-  if (p.mode === 'raise' || p.mode === 'lower') {
-    showPrompt(p.mode);
-  } else if (p.mode === 'standing') {
-    // "I'm standing · keep working" starts paced moves; "5 more minutes" keeps the pacing going.
-    if (payload.paced && !pace) pace = { done: 0, readyAt: 0 };
+  if (p.mode !== 'standing') return;
+  if (!move) setView('pill');
+  window.api.getStandState().then((st) => {
+    standState = st;
+    // "Keep working" starts paced moves. After "5 more minutes" the widget opens again
+    // part-way through: pick up after the moves whose time has already passed.
     if (!payload.paced) pace = null;
-    if (!move) setView('pill');
-    window.api.getStandState().then((st) => { standState = st; renderPill(st); });
-  }
+    else if (!pace) {
+      const elapsed = standingElapsed(st);
+      const unit = payload.unitMs || 60000;
+      const passed = elapsed > 0 ? pacedSchedule(st.standingTotalMs, unit).filter((s) => s.at < elapsed).length : 0;
+      pace = { done: passed, readyAt: passed ? elapsed + unit : 0 };
+    }
+    renderPill(st);
+  });
 });
 
 window.api.onStandState((st) => {

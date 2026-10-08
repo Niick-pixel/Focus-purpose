@@ -100,9 +100,6 @@ function render() {
     mix: 'Best of both, ~4 min: pelvic floor holds and squats with hip-flexor and chest stretches.',
     none: 'Just the reminders to raise and lower your desk.',
   }[settings.standRoutine] || '';
-  $('#promptHint').textContent = settings.standPrompt === 'fullscreen'
-    ? 'Takes over the screen, like a break. Good if you tend to ignore the corner.'
-    : 'A small card in the bottom-right corner. Your window stays active — no need to minimize anything.';
   for (const el of $$('[data-disabled-if]')) el.classList.toggle('disabled', !!settings[el.dataset.disabledIf]);
 
   const tips = $('#tips');

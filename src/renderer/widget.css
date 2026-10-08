@@ -1,5 +1,5 @@
 /* Floating standing widget ("the dock"): bottom-right, always on top, never takes focus.
-   Three views share one window, which main.js resizes around its bottom-right corner. */
+   Two views share one window, which main.js resizes around its bottom-right corner. */
 html, body {
   margin: 0;
   background: transparent;
@@ -22,43 +22,12 @@ body.leaving .dock { transition: opacity .5s, transform .5s; opacity: 0; transfo
 .dock[data-view="pill"] { border-radius: 999px; }
 @keyframes pop { from { transform: translateY(10px) scale(.96); opacity: 0; } }
 .dock > section { display: none; }
-.dock[data-view="prompt"] .prompt,
 .dock[data-view="pill"] .pill,
 .dock[data-view="move"] .move { display: flex; animation: fade .35s ease both; }
 @keyframes fade { from { opacity: 0; } }
 button { -webkit-app-region: no-drag; cursor: default; }
 
 .eyebrow-mini { font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
-
-/* ---- Prompt ---------------------------------------------------------------- */
-.prompt { flex-direction: column; gap: 4px; padding: 14px 18px 14px; height: 100%; box-sizing: border-box; }
-.p-head { display: flex; align-items: center; gap: 8px; }
-.p-icon { width: 16px; height: 16px; fill: none; stroke: var(--accent); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.p-title { margin: 4px 0 0; font-size: 20px; font-weight: 400; color: var(--text); }
-.p-sub { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
-.p-actions { margin-top: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.pbtn {
-  border: 0;
-  border-radius: 999px;
-  padding: 7px 14px;
-  font-size: 12.5px;
-  background: var(--surface-2);
-  color: var(--text);
-  transition: background .2s, filter .2s;
-}
-.pbtn:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); }
-.pbtn.primary { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
-.pbtn.primary:hover { filter: brightness(1.06); }
-.p-links { margin-left: auto; display: flex; gap: 2px; margin-right: -8px; }
-.p-links button {
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  font-size: 11.5px;
-  padding: 4px 6px;
-  border-radius: 8px;
-}
-.p-links button:hover { color: var(--text); background: var(--surface-2); }
 
 /* ---- Pill ------------------------------------------------------------------ */
 .pill { align-items: center; gap: 10px; height: 100%; padding: 0 9px 0 8px; box-sizing: border-box; }
